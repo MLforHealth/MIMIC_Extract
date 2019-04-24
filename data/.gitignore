@@ -1,0 +1,4 @@
+# Ignore everything per data use and confidentiality agreements
+*
+# Except this file
+!.gitignore

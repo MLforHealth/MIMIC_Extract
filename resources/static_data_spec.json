@@ -1,0 +1,167 @@
+{
+  "name": "static_patient_data",
+  "title": "Static attributes of ICU patients extracted from MIMIC-III",
+  "description": "Includes demographics and info about hospital/ICU admissions",
+  "license": "The use of data is conditional on citing the original data sources.",
+  "resources": [
+    {
+      "name": "static_tabular_data",
+      "path": "static_data.csv",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "profile": "tabular-data-resource",
+      "$schema": "https://frictionlessdata.io/schemas/table-schema.json",
+      "schema": {
+        "fields": [
+          {
+            "name": "subject_id",
+            "description": "ID number for subject within PATIENTS table",
+            "type": "integer",
+            "constraints" : {
+                "required" : true
+            }
+          },
+          {
+            "name": "hadm_id",
+            "description": "ID number for subject within ADMISSIONS table",
+            "type": "integer",
+            "constraints" : {
+                "required" : true
+            }            
+          },
+          {
+            "name": "icustay_id",
+            "description": "ID number for subject within ICUSTAYS table",
+            "type": "integer",
+            "constraints" : {
+                "required" : true
+            }
+          },
+          {
+            "name": "gender",
+            "description": "Indicates subject gender. 'M'=male or 'F'=female.",
+            "type": "string",
+            "pandas_dtype": "category",
+            "constraints" : {
+                "required" : true
+            }
+          },
+          {
+            "name": "ethnicity",
+            "description": "Indicates subject ethnicity. Many human-readable categories/sub-categories.",
+            "type": "string",
+            "pandas_dtype": "category",
+            "constraints" : {
+                "required" : true
+            }
+          },
+          {
+            "name": "age",
+            "type": "number",
+            "description": "Age of patient at admission (in fractional years)",
+            "unit" : "year",
+            "constraints" : {
+                "required" : true
+            }
+          },
+          {
+            "name": "insurance",
+            "type": "string",
+            "description": "Insurance type of patient at admission.",
+            "unit" : "category",
+            "constraints" : {
+                "required" : true
+            }
+          },
+          {
+            "name": "admittime",
+            "type": "datetime",
+            "description": "Datetime of subject's admission.",
+            "constraints" : {
+                "required" : true
+            }
+          },
+          {
+            "name": "dischtime",
+            "type": "datetime",
+            "description": "Datetime of subject's discharge.",
+            "constraints" : {
+                "required" : true
+            }
+          },
+          {
+            "name": "deathtime",
+            "type": "datetime",
+            "description": "Datetime of subject's death. NaN if subject did not die.",
+            "constraints" : {
+                "required" : false
+            }
+          },
+          {
+            "name": "intime",
+            "type": "datetime",
+            "description": "Datetime of subject's intake into ICU.",
+            "constraints" : {
+                "required" : true
+            }
+          },
+          {
+            "name": "outtime",
+            "type": "datetime",
+            "description": "Datetime of subject's exit from ICU.",
+            "constraints" : {
+                "required" : true
+            }
+          },
+          {
+            "name": "los_icu",
+            "type": "number",
+            "description": "Length-of-stay in the ICU in days.",
+            "unit": "day",
+            "constraints" : {
+                "required" : true
+            }
+          },          
+          {
+            "name": "admission_type",
+            "type": "string",
+            "description": "Category of admission: {'ELECTIVE', 'EMERGENCY', 'URGENT'}.",
+            "pandas_dtype": "category"
+          },
+          {
+            "name": "first_careunit",
+            "type": "string",
+            "description": "Category of hospital unit where first admitted: {'CCU', 'CSRU', 'MICU', 'SICU', 'TSICU'}",
+            "pandas_dtype": "category"
+          },
+          {
+            "name": "mort_icu",
+            "type": "integer",
+            "description": "Indicates if subject died in ICU. 1 if died, 0 otherwise.",
+            "pandas_dtype": "category"
+          },
+          {
+            "name": "mort_hosp",
+            "type": "integer",
+            "description": "Indicates if subject died in hospital. 1 if died, 0 otherwise.",
+            "pandas_dtype": "category"
+          },
+          {
+            "name": "hospital_expire_flag",
+            "type": "integer",
+            "description": "TODO ???",
+            "pandas_dtype": "category"
+          },
+          {
+            "name": "hospstay_seq",
+            "type": "integer",
+            "description": "TODO ???",
+            "pandas_dtype": "category"
+          }
+        ],
+      "missingValues": "nan",
+      "primaryKey": ["subject_id", "hadm_id", "icustay_id"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+-- Demographic, neuro, status
+198 GCS ready
+581 Weight ignore
+762 AdmitWt No-Level2
+
+-- Cardiovascular
+455 NBPSys ready
+455 NBPDias value2 Not-exist
+456 NBPMean ready
+1149 NBP Not-exist
+51 SBP ready (may want to separate this from Level 2 called Systolic Blood Pressure)
+51 DBP value2 Not-exist
+52 MAP ready
+211 HR ready
+646 OR 1148 SpO2 ready (1148 Not-exist)
+113 OR 1103 CVP No-Level2 (and count is too low for cvp)
+491 PAPMean No-Level2
+492 PAPSd No-Level2
+116 CrdIndx No-Level2
+626 SVR No-Level2
+90 COtd No-Level2
+89 COfck No-Level2
+504 PCWP No-Level2
+512 PVR No-Level2
+3353 CardiacMurmur No-Level2
+3685 VitaminK No-Level2
+
+-- Chemistries, Electrolytes, acid/base
+837 OR 1536 Na verify
+829 OR 1535 K verify
+788 OR 1523 Cl verify
+827 Phosphorous No-Level2
+818 OR 1531 Lactic_Acid verify
+787 CO2 No-Level2
+811 Glucose ready
+781 OR 1162 BUN verify
+791 OR 1525 Creatinine verify
+821 OR 1532 Mg verify
+786 OR 1522 Ca verify
+816 IonCa verify
+769 ALT verify
+770 AST verify
+851 Troponin verify
+806 Fibrinogen No-Level2
+848 OR 1538 TBili verify
+803 OR 1527 DBili verify (should probably be separated in terms of level2 from above)
+849 OR 1539 TProtein No-Level2
+772 OR 1521 Albumin verify
+818 OR 1531 Lactate verify
+
+-- Blood Gases
+776 ArtBE No-Level2
+777 ArtCO2 maybe
+778 ArtPaCO2 verify
+779 ArtPaO2 (should probably be separated in terms of level 2 from above)
+780 OR 1126 ArtpH ready
+859 PvO2 No-Level2
+
+-- Ventilation
+190 FiO2Set No-Level2
+506 PEEPSet No-Level2
+618 RESP ready
+615 RespTot ready (should probably be seperated from above in terms of level2)
+619 RespSet No-Level2
+614 RespSpon ready (should be separated from 615 and 618)
+535 PIP No-Level2
+543 PlateauPres No-Level2
+682 TidVolObs No-Level2
+683 TidVolSet No-Level2
+684 TidVolSpon No-Level2
+834 SaO2 ready
+428 OR 425 LungSounds No-Level2
+
+
+-- Hematology
+813 HCT verify
+814 Hg verify
+815 OR 1530 INR verify
+828 Platelets verify
+824 OR 1286 PT verify
+825 OR 1533 PTT verify
+861 OR 1127 OR 1542 WBC verify
+833 RBC verify
+678 OR 679 TEMP ready
+
+-- Severity Scores
+20001 SAPS Not-exist
+20002 RespSOFA Not-exist
+20003 HepaticSOFA Not-exist
+20004 HematSOFA Not-exist
+20006 NeuroSOFA Not-exist
+20007 CardioSOFA Not-exist    
+
+-- Categorical
+212 Heart_Rhythm No-Level2
+161 Ectopy_Type No-Level2
+159 Ectopy_Freq No-Level2
+128 Code_Status No-Level2
+1484 FallRisk No-Level2
+479 Orientation No-Level2
+432 ConsciousLevel No-Level2
+184 EyeOpening ready
+454 MotorResponse ready (should probably be separated from 184 in terms of level2)
+1337 RikerSAS No-Level2
+722 Vent No-Level2
+720 VentMode No-Level2
+516 Pacemaker No-Level2
+690 Trach No-Level2
+643 SkinColor No-Level2
+644 SkinIntegrity No-Level2
+1125 ServiceType No-Level2  
+
+-- Medication Data
+142 Integrelin No-Level2 (discrepancy - says Current Goal in csv file) 
+119 OR 44 Epinephrine No-Level2 (discrepancy - says Cervical Collar Type in csv)
+123 Lasix No-Level2 (discrepancy - says Chest Tube Site #2 in csv file)
+51 Vasopressin verify (discrepancy - says Arterial BP [Systolic])
+50 Nitroprusside No-Level2 (discrepancy - says Apnea Time Interval)
+126 MorphineSulfate Not-exist
+112 Amiodarone No-Level2 (discrepancy - CT #4 Suction Amount)
+124 Midazolam No-Level2 (discrepancy - Chest Tube Site #3)
+43 Dopamine (discrepancy - Angio Appearance #1)
+118 OR 149 Fentanyl No-Level2 (discrepancy - Cerv Collar Status)
+120 OR 47 Levophed Not-Exist (47 says Angio Site #1)
+25 Heparin No-Level2 (discrepancy - AV Interval)
+121 OR 49 Nitroglycerine (discrepancy - 121 is Chest PT [Right] and 49 is Anti-Embolism [Device]
+45 Insulin No-Level2 (discrepancy - Angio Dressing #1)
+127 OR 128 Neosynephrine No-Level2 (discrepancy - 127 is Circulation/SkinInt and 128 is Code Status)
+131 Propofol No-Level2 (discrepancy - Compliance(40-60ml))
+
+-- Fluid Input Output Data
+55 OR 69 OR 715 OR 61 OR 57 OR 85 OR 473 OR 405 OR 428 UrineOut No-Level2 (discrepancy)
+144 OR 172 OR 398 InputRBCs (144 is Not-exist, 172 is Education Topic #2 and 398 is Inc #1 [Dressing])
+179 OR 224 OR 3955 OR 163 OR 319 OR 221 InputOtherBlood No-Level2 (discrepancy)
