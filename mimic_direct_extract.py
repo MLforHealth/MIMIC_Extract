@@ -1,21 +1,19 @@
+from __future__ import print_function, division
+
 # MIMIC IIIv14 on postgres 9.4
-import numpy as np
-import pandas as pd
-from pandas import DataFrame
-import psycopg2
+import os, psycopg2, re, sys, time, numpy as np, pandas as pd
 from sklearn import metrics
 from datetime import datetime
 from datetime import timedelta
-import sys
-import os
-import time
 
-from os import environ
 from os.path import isfile, isdir, splitext
 import argparse
 import cPickle
-import numpy as np
 import numpy.random as npr
+
+import spacy
+# TODO(mmd): Upgrade to python 3 and use scispacy (requires python 3.6)
+# import scispacy
 
 import matplotlib
 matplotlib.use('Agg')
@@ -27,6 +25,14 @@ from datapackage_io_util import (
     save_sanitized_df_to_csv,
     sanitize_df,
 )
+from heuristic_sentence_splitter import sent_tokenize_rules
+from mimic_querier import *
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+SQL_DIR = os.path.join(CURRENT_DIR, 'SQL_Queries')
+STATICS_QUERY_PATH = os.path.join(SQL_DIR, 'statics.sql')
+CODES_QUERY_PATH = os.path.join(SQL_DIR, 'codes.sql')
+NOTES_QUERY_PATH = os.path.join(SQL_DIR, 'notes.sql')
 
 # Output filenames
 static_filename = 'static_data.csv'
@@ -39,8 +45,8 @@ times_filename = 'fenceposts.npy'
 dynamic_hd5_filename = 'vitals_hourly_data.h5'
 dynamic_hd5_filt_filename = 'all_hourly_data.h5'
 
-codes_filename = 'C.npy'
 codes_hd5_filename = 'C.h5'
+notes_hd5_filename = 'N.h5'
 idx_hd5_filename = 'C_idx.h5'
 
 outcome_filename = 'outcomes_hourly_data.csv'
@@ -48,8 +54,6 @@ outcome_hd5_filename = 'outcomes_hourly_data.h5'
 outcome_columns_filename = 'outcomes_colnames.txt'
 
 # SQL command params
-dbname = 'mimic'
-schema_name = 'mimiciii'
 
 ID_COLS = ['subject_id', 'hadm_id', 'icustay_id']
 ITEM_COLS = ['itemid', 'label', 'LEVEL1', 'LEVEL2']
@@ -81,22 +85,6 @@ def add_blank_indicators(out_gb):
     vals = list([0]*len(hrs))
     return pd.DataFrame({'subject_id': subject_id, 'hadm_id':hadm_id,
                         'hours_in':hrs, 'on':vals})#'icustay_id': icustay_id,
-
-def get_values_by_name_from_df_column_or_index(data_df, colname):
-    """ Easily get values for named field, whether a column or an index
-
-    Returns
-    -------
-    values : 1D array
-    """
-    try:
-        values = data_df[colname]
-    except KeyError as e:
-        if colname in data_df.index.names:
-            values = data_df.index.get_level_values(colname)
-        else:
-            raise e
-    return values
 
 def continuous_outcome_processing(out_data, data, icustay_timediff):
     """
@@ -173,7 +161,7 @@ def save_pop(
 # From Dave's approach!
 def get_variable_mapping(mimic_mapping_filename):
     # Read in the second level mapping of the itemids
-    var_map = DataFrame.from_csv(mimic_mapping_filename, index_col=None).fillna('').astype(str)
+    var_map = pd.DataFrame.from_csv(mimic_mapping_filename, index_col=None).fillna('').astype(str)
     var_map = var_map.ix[(var_map['LEVEL2'] != '') & (var_map.COUNT>0)]
     var_map = var_map.ix[(var_map.STATUS == 'ready')]
     var_map.ITEMID = var_map.ITEMID.astype(int)
@@ -185,7 +173,7 @@ def get_variable_ranges(range_filename):
     columns = [ 'LEVEL2', 'OUTLIER LOW', 'VALID LOW', 'IMPUTE', 'VALID HIGH', 'OUTLIER HIGH' ]
     to_rename = dict(zip(columns, [ c.replace(' ', '_') for c in columns ]))
     to_rename['LEVEL2'] = 'VARIABLE'
-    var_ranges = DataFrame.from_csv(range_filename, index_col=None)
+    var_ranges = pd.DataFrame.from_csv(range_filename, index_col=None)
     var_ranges = var_ranges[columns]
     var_ranges.rename_axis(to_rename, axis=1, inplace=True)
     var_ranges = var_ranges.drop_duplicates(subset='VARIABLE', keep='first')
@@ -319,7 +307,7 @@ def save_numerics(
 
     X = X.sort_index(axis=0).sort_index(axis=1)
 
-    print "Shape of X : ", X.shape
+    print("Shape of X : ", X.shape)
 
     # Turn back into columns
     if columns_filename is not None:
@@ -354,13 +342,90 @@ def save_numerics(
 
     return X
 
-def save_icd9_codes(data, codes, outPath, codes_filename, codes_h5_filename):
+def save_notes(notes, outPath=None, notes_h5_filename=None):
+    notes_id_cols = list(set(ID_COLS).intersection(notes.columns))# + ['row_id'] TODO: what is row_id?
+    notes_metadata_cols = ['chartdate', 'charttime', 'category', 'description']
+
+    notes.set_index(notes_id_cols + notes_metadata_cols, inplace=True)
+    # preprocessing!!
+    # TODO(Scispacy)
+    # TODO(improve)
+    # TODO(spell checking)
+    # TODO(CUIs)
+    # TODO This takes forever. At the very least add a progress bar.
+
+    def sbd_component(doc):
+        for i, token in enumerate(doc[:-2]):
+            # define sentence start if period + titlecase token
+            if token.text == '.' and doc[i+1].is_title:
+                doc[i+1].sent_start = True
+            if token.text == '-' and doc[i+1].text != '-':
+                doc[i+1].sent_start = True
+        return doc
+
+    #convert de-identification text into one token
+    def fix_deid_tokens(text, processed_text):
+        deid_regex  = r"\[\*\*.{0,15}.*?\*\*\]" 
+        indexes = [m.span() for m in re.finditer(deid_regex,text,flags=re.IGNORECASE)]
+        for start,end in indexes:
+            processed_text.merge(start_idx=start,end_idx=end)
+        return processed_text
+
+    nlp = spacy.load('en_core_web_sm') # Maybe try lg model?
+    nlp.add_pipe(sbd_component, before='parser')  # insert before the parser
+    disabled = nlp.disable_pipes('ner')
+
+    def process_sections_helper(section, note, processed_sections):
+        processed_section = nlp(section['sections'])
+        processed_section = fix_deid_tokens(section['sections'], processed_section)
+        processed_sections.append(processed_section)
+
+    def process_note_willie_spacy(note):
+        note_sections = sent_tokenize_rules(note)
+        processed_sections = []
+        section_frame = pd.DataFrame({'sections':note_sections})
+        section_frame.apply(process_sections_helper, args=(note,processed_sections,), axis=1)
+        return processed_sections
+
+    def text_process(sent, note):
+        sent_text = sent['sents'].text
+        if len(sent_text) > 0 and sent_text.strip() != '\n':
+            if '\n'in sent_text:
+                sent_text = sent_text.replace('\n', ' ')
+            note['text'] += sent_text + '\n'  
+
+    def get_sentences(processed_section, note):
+        sent_frame = pd.DataFrame({'sents': list(processed_section['sections'].sents)})
+        sent_frame.apply(text_process, args=(note,), axis=1)
+
+    def process_frame_text(note):
+        try:
+            note_text = unicode(note['text'])
+            note['text'] = ''
+            processed_sections = process_note_willie_spacy(note_text)
+            ps = {'sections': processed_sections}
+            ps = pd.DataFrame(ps)
+
+            ps.apply(get_sentences, args=(note,), axis=1)
+
+            return note 
+        except Exception as e:
+            print('error', e)
+            #raise e
+
+    notes = notes.apply(process_frame_text, axis=1)
+
+    if outPath is not None and notes_h5_filename is not None:
+        notes.to_hdf(os.path.join(outPath, notes_h5_filename), 'notes')
+    return notes
+
+def save_icd9_codes(codes, outPath, codes_h5_filename):
     codes.set_index(ID_COLS, inplace=True)
     codes.to_hdf(os.path.join(outPath, codes_h5_filename), 'C')
     return codes
 
 def save_outcome(
-    data, dbname, schema_name, outPath, outcome_filename, outcome_hd5_filename,
+    data, querier, outPath, outcome_filename, outcome_hd5_filename,
     outcome_columns_filename, outcome_schema, host=None
 ):
     """ Retrieve outcomes from DB and save to disk
@@ -383,15 +448,6 @@ def save_outcome(
     icustay_timediff_tmp = data['outtime'] - data['intime']
     icustay_timediff = pd.Series([timediff.days*24 + timediff.seconds//3600
                                   for timediff in icustay_timediff_tmp], index=data.index.values)
-
-
-    # Setup access to PSQL db
-    args = dict(dbname=dbname, host=host) if host is not None else dict(dbname=dbname)
-    con = psycopg2.connect(**args)
-    cur = con.cursor()
-
-    # Query on ventilation data
-    cur.execute('SET search_path to ' + schema_name)
     query = """
     select i.subject_id, i.hadm_id, v.icustay_id, v.ventnum, v.starttime, v.endtime
     FROM icustay_detail i
@@ -399,8 +455,12 @@ def save_outcome(
     where v.icustay_id in ({icuids})
     and v.starttime between intime and outtime
     and v.endtime between intime and outtime;
-    """.format(icuids=','.join(icuids_to_keep))
-    vent_data = pd.read_sql_query(query, con)
+    """
+
+    old_template_vars = querier.exclusion_criteria_template_vars
+    querier.exclusion_criteria_template_vars = dict(icuids=','.join(icuids_to_keep))
+
+    vent_data = querier.query(query_string=query)
     vent_data = continuous_outcome_processing(vent_data, data, icustay_timediff)
     vent_data = vent_data.apply(add_outcome_indicators)
     vent_data.rename(columns = {'on':'vent'}, inplace=True)
@@ -442,7 +502,6 @@ def save_outcome(
     # TODO(mmd): This section doesn't work. What is its purpose?
     for t, c in zip(table_names, column_names):
         # TOTAL VASOPRESSOR DATA
-        cur.execute('SET search_path to ' + schema_name)
         query = """
         select i.subject_id, i.hadm_id, v.icustay_id, v.vasonum, v.starttime, v.endtime
         FROM icustay_detail i
@@ -450,16 +509,16 @@ def save_outcome(
         where v.icustay_id in ({icuids})
         and v.starttime between intime and outtime
         and v.endtime between intime and outtime;
-        """.format(icuids=','.join(icuids_to_keep), table=t)
-        new_data = pd.read_sql_query(query,con)
+        """
+        new_data = querier.query(query_string=query, extra_template_vars=dict(table=t))
         new_data = continuous_outcome_processing(new_data, data, icustay_timediff)
         new_data = new_data.apply(add_outcome_indicators)
-        new_data.rename(columns = {'on':c}, inplace=True)
+        new_data.rename(columns={'on': c}, inplace=True)
         new_data = new_data.reset_index()
         # c may not be in Y if we are only extracting a subset of the population, in which c was never
         # performed.
         if not c in new_data:
-            print "Column ", c, " not in data."
+            print("Column ", c, " not in data.")
             continue
 
         Y = Y.merge(
@@ -473,13 +532,12 @@ def save_outcome(
         Y[c] = Y[c].astype(int)
         #Y = Y.sort_values(['subject_id', 'icustay_id', 'hours_in']) #.merge(df3,on='name')
         Y = Y.reset_index(drop=True)
-        print 'Extracted ' + c + ' from ' + t
+        print('Extracted ' + c + ' from ' + t)
 
 
     tasks=["colloid_bolus", "crystalloid_bolus", "nivdurations"]
 
     for task in tasks:
-        cur.execute('SET search_path to ' + schema_name)
         if task=='nivdurations':
             query = """
             select i.subject_id, i.hadm_id, v.icustay_id, v.starttime, v.endtime
@@ -488,7 +546,7 @@ def save_outcome(
             where v.icustay_id in ({icuids})
             and v.starttime between intime and outtime
             and v.endtime between intime and outtime;
-            """.format(icuids=','.join(icuids_to_keep), table=task)
+            """
         else:
             query = """
             select i.subject_id, i.hadm_id, v.icustay_id, v.charttime AS starttime, 
@@ -497,15 +555,14 @@ def save_outcome(
             INNER JOIN {table} v ON i.icustay_id = v.icustay_id
             where v.icustay_id in ({icuids})
             and v.charttime between intime and outtime
-            """.format(icuids=','.join(icuids_to_keep), table=task)
-        new_data = pd.read_sql_query(query, con=con)
-        if new_data.shape[0] == 0:
-            continue
+            """
+
+        new_data = querier.query(query_string=query, extra_template_vars=dict(table=task))
+        if new_data.shape[0] == 0: continue
         new_data = continuous_outcome_processing(new_data, data, icustay_timediff)
         new_data = new_data.apply(add_outcome_indicators)
         new_data.rename(columns = {'on':task}, inplace=True)
         new_data = new_data.reset_index()
-        new_data.to_csv('new_task.csv')
         Y = Y.merge(
             new_data[['subject_id', 'hadm_id', 'icustay_id', 'hours_in', task]],
             on=['subject_id', 'hadm_id', 'icustay_id', 'hours_in'],
@@ -516,15 +573,14 @@ def save_outcome(
         Y.fillna(0, inplace=True)
         Y[task] = Y[task].astype(int)
         Y = Y.reset_index(drop=True)
-        print 'Extracted ' + task
-    
+        print('Extracted ' + task)
+
 
     # TODO: ADD THE RBC/PLT/PLASMA DATA
     # TODO: ADD DIALYSIS DATA
     # TODO: ADD INFECTION DATA
-
-    cur.close()
-    con.close()
+    # TODO: Move queries to files
+    querier.exclusion_criteria_template_vars = old_template_vars
 
     Y = Y.filter(items=['subject_id', 'hadm_id', 'icustay_id', 'hours_in', 'vent'] + column_names + tasks)
     Y.subject_id = Y.subject_id.astype(int)
@@ -536,7 +592,7 @@ def save_outcome(
     Y = Y.sort_values(y_id_cols)
     Y.set_index(y_id_cols, inplace=True)
 
-    print 'Shape of Y : ', Y.shape
+    print('Shape of Y : ', Y.shape)
 
     # SAVE AS NUMPY ARRAYS AND TEXT FILES
     #np_Y = Y.as_matrix()
@@ -644,6 +700,7 @@ def plot_variable_histograms(col_names, df):
 
 # Main, where you can call what makes sense.
 if __name__ == '__main__':
+    print("Running!")
     # Construct the argument parse and parse the arguments
     ap = argparse.ArgumentParser()
     ap.add_argument('--out_path', type=str, default= '/scratch/{}/phys_acuity_modelling/data'.format(os.environ['USER']),
@@ -651,6 +708,9 @@ if __name__ == '__main__':
     ap.add_argument('--resource_path',
         type=str,
         default=os.path.expandvars("$MIMIC_EXTRACT_CODE_DIR/resources/"))
+    ap.add_argument('--queries_path',
+        type=str,
+        default=os.path.expandvars("$MIMIC_EXTRACT_CODE_DIR/SQL_Queries/"))
     ap.add_argument('--extract_pop', type=int, default=1,
                     help='Whether or not to extract population data: 0 - no extraction, ' +
                     '1 - extract if not present in the data directory, 2 - extract even if there is data')
@@ -664,6 +724,9 @@ if __name__ == '__main__':
     ap.add_argument('--extract_codes', type=int, default=1,
                     help='Whether or not to extract ICD9 codes: 0 - no extraction, ' +
                     '1 - extract if not present in the data directory, 2 - extract even if there is data')
+    ap.add_argument('--extract_notes', type=int, default=1,
+                    help='Whether or not to extract notes: 0 - no extraction, ' +
+                    '1 - extract if not present in the data directory, 2 - extract even if there is data')
     ap.add_argument('--pop_size', type=int, default=0,
                     help='Size of population to extract')
     ap.add_argument('--exit_after_loading', type=int, default=0)
@@ -672,8 +735,18 @@ if __name__ == '__main__':
                     '1 - apply variable limits, 0 - do not apply variable limits')
     ap.add_argument('--plot_hist', type=int, default=1,
                     help='Whether to plot the histograms of the data')
+
     ap.add_argument('--psql_host', type=str, default=None,
                     help='Postgres host. Try "/var/run/postgresql/" for Unix domain socket errors.')
+    ap.add_argument('--psql_dbname', type=str, default='mimic',
+                    help='Postgres database name.')
+    ap.add_argument('--psql_schema_name', type=str, default='mimiciii',
+                    help='Postgres database name.')
+    ap.add_argument('--psql_user', type=str, default=None,
+                    help='Postgres user.')
+    ap.add_argument('--psql_password', type=str, default=None,
+                    help='Postgres password.')
+
     ap.add_argument('--group_by_level2', action='store_false', dest='group_by_level2', default=True,
                     help='Do group by level2.')
     
@@ -686,13 +759,12 @@ if __name__ == '__main__':
                     help='Minimum hours of stay to be included')
     ap.add_argument('--max_duration', type=int, default=240,
                     help='Maximum hours of stay to be included')
-                   
 
     #############
     # Parse args
     args = vars(ap.parse_args())
     for key in sorted(args.keys()):
-        print key, args[key]
+        print(key, args[key])
 
     if not isdir(args['resource_path']):
         raise ValueError("Invalid resource_path: %s" % args['resource_path'])
@@ -707,7 +779,7 @@ if __name__ == '__main__':
         os.path.join(args['resource_path'], 'outcome_data_spec.json'))
 
     if not isdir(args['out_path']):
-        print 'ERROR: OUTPATH %s DOES NOT EXIST' % args['out_path']
+        print('ERROR: OUTPATH %s DOES NOT EXIST' % args['out_path'])
         sys.exit()
     else:
         outPath = args['out_path']
@@ -727,19 +799,26 @@ if __name__ == '__main__':
         dynamic_hd5_filt_filename = splitext(dynamic_hd5_filt_filename)[0] + '_' + pop_size + splitext(dynamic_hd5_filt_filename)[1]
         outcome_hd5_filename = splitext(outcome_hd5_filename)[0] + '_' + pop_size + splitext(outcome_hd5_filename)[1]
         #outcome_columns_filename = splitext(outcome_columns_filename)[0] + '_' + pop_size + splitext(outcome_columns_filename)[1]
-        codes_filename = splitext(codes_filename)[0] + '_' + pop_size + splitext(codes_filename)[1]
         codes_hd5_filename = splitext(codes_hd5_filename)[0] + '_' + pop_size + splitext(codes_hd5_filename)[1]
+        notes_hd5_filename = splitext(notes_hd5_filename)[0] + '_' + pop_size + splitext(notes_hd5_filename)[1]
         idx_hd5_filename = splitext(idx_hd5_filename)[0] + '_' + pop_size + splitext(idx_hd5_filename)[1]
 
+    dbname = args['psql_dbname']
+    schema_name = args['psql_schema_name']
     query_args = {'dbname': dbname}
     if args['psql_host'] is not None: query_args['host'] = args['psql_host']
+    if args['psql_user'] is not None: query_args['user'] = args['psql_user']
+    if args['psql_password'] is not None: query_args['password'] = args['psql_password']
+
+    querier = MIMIC_Querier(query_args=query_args, schema_name=schema_name)
 
     #############
     # Population extraction
 
     data = None
     if (args['extract_pop'] == 0 | (args['extract_pop'] == 1) ) & isfile(os.path.join(outPath, static_filename)):
-        data = DataFrame.from_csv(os.path.join(outPath, static_filename))
+        print("Reloading data from %s" % os.path.join(outPath, static_filename))
+        data = pd.DataFrame.from_csv(os.path.join(outPath, static_filename))
         data = sanitize_df(data, static_data_schema)
 
         """
@@ -755,9 +834,7 @@ if __name__ == '__main__':
         data['deathtime'] = pd.to_datetime(data['deathtime'])
         """
     elif (args['extract_pop'] == 1 & (not isfile(os.path.join(outPath, static_filename)))) | (args['extract_pop'] == 2):
-        con = psycopg2.connect(**query_args)
-        cur = con.cursor()
-
+        print("Building data from scratch.")
         pop_size_string = ''
         if args['pop_size'] > 0:
             pop_size_string = 'LIMIT ' + str(args['pop_size'])
@@ -766,52 +843,32 @@ if __name__ == '__main__':
         min_dur_string = str(args['min_duration'])
         max_dur_string = str(args['max_duration'])
         min_day_string = str(float(args['min_duration'])/24)
-        cur.execute('SET search_path to ' + schema_name)
-        query = \
-        """
-        select distinct i.subject_id, i.hadm_id, i.icustay_id,
-            i.gender, i.admission_age as age, a.insurance,
-            a.deathtime, i.ethnicity, i.admission_type, s.first_careunit,
-            CASE when a.deathtime between i.intime and i.outtime THEN 1 ELSE 0 END AS mort_icu,
-            CASE when a.deathtime between i.admittime and i.dischtime THEN 1 ELSE 0 END AS mort_hosp,
-            i.hospital_expire_flag,
-            i.hospstay_seq, i.los_icu,
-            i.admittime, i.dischtime,
-            i.intime, i.outtime
-          FROM icustay_detail i
-          INNER JOIN admissions a ON i.hadm_id = a.hadm_id
-          INNER JOIN icustays s ON i.icustay_id = s.icustay_id
-          WHERE s.first_careunit NOT like 'NICU'
-          and i.hadm_id is not null and i.icustay_id is not null
-          and i.hospstay_seq = 1
-          and i.icustay_seq = 1
-          and i.admission_age >= {min_age}
-          and i.los_icu >= {min_day}
-          and (i.outtime >= (i.intime + interval '{min_dur} hours'))
-          and (i.outtime <= (i.intime + interval '{max_dur} hours'))
-          ORDER BY subject_id
-          {limit}
-          ;
-          """.format(limit=pop_size_string, min_age=min_age_string, min_dur=min_dur_string, 
-                     max_dur=max_dur_string, min_day=min_day_string)
 
-        data_df = pd.read_sql_query(query, con)
-        cur.close()
-        con.close()
+        template_vars = dict(
+            limit=pop_size_string, min_age=min_age_string, min_dur=min_dur_string, max_dur=max_dur_string,
+            min_day=min_day_string
+        )
 
+        data_df = querier.query(query_file=STATICS_QUERY_PATH, extra_template_vars=template_vars)
         data_df = sanitize_df(data_df, static_data_schema)
+
+        print("Storgin data @ %s" % os.path.join(outPath, static_filename))
         data = save_pop(data_df, outPath, static_filename, args['pop_size'], static_data_schema)
 
-    if data is None: print 'SKIPPED static_data'
-    else:            print "loaded static_data"
+    if data is None: print('SKIPPED static_data')
+    else:
+        # So all subsequent queries will limit to just that already extracted in data_df.
+        querier.add_exclusion_criteria_from_df(data, columns=['hadm_id', 'subject_id'])
+        print("loaded static_data")
 
     #############
     # If there is numerics extraction
     X = None
     if (args['extract_numerics'] == 0 | (args['extract_numerics'] == 1) ) & isfile(os.path.join(outPath, dynamic_hd5_filename)):
+        print("Reloading X from %s" % os.path.join(outPath, dynamic_hd5_filename))
         X = pd.read_hdf(os.path.join(outPath, dynamic_hd5_filename))
     elif (args['extract_numerics'] == 1 & (not isfile(os.path.join(outPath, dynamic_hd5_filename)))) | (args['extract_numerics'] == 2):
-        print "Extracting vitals data..."
+        print("Extracting vitals data...")
         start_time = time.time()
 
         ########
@@ -830,10 +887,12 @@ if __name__ == '__main__':
         labitems_to_keep = var_map.loc[var_map['LINKSTO'] == 'labevents'].ITEMID
         labitems_to_keep = set([ str(i) for i in labitems_to_keep ])
 
+
+        # TODO(mmd): Use querier, move to file
         con = psycopg2.connect(**query_args)
         cur = con.cursor()
 
-        print "  starting db query with %d subjects..." % (len(icuids_to_keep))
+        print("  starting db query with %d subjects..." % (len(icuids_to_keep)))
         cur.execute('SET search_path to ' + schema_name)
         query = \
         """
@@ -872,65 +931,65 @@ if __name__ == '__main__':
 
         cur.close()
         con.close()
-        print "  db query finished after %.3f sec" % (time.time() - start_time)
+        print("  db query finished after %.3f sec" % (time.time() - start_time))
         X = save_numerics(
             data, X, I, var_map, var_ranges, outPath, dynamic_filename, columns_filename, subjects_filename,
             times_filename, dynamic_hd5_filename, group_by_level2=args['group_by_level2'], apply_var_limit=args['var_limits'],
             min_percent=args['min_percent']
         )
 
-    if X is None: print "SKIPPED vitals_hourly_data"
-    else:         print "LOADED vitals_hourly_data"
+    if X is None: print("SKIPPED vitals_hourly_data")
+    else:         print("LOADED vitals_hourly_data")
 
     #############
     # If there is codes extraction
     C = None
     if ( (args['extract_codes'] == 0) or (args['extract_codes'] == 1) ) and isfile(os.path.join(outPath, codes_hd5_filename)):
+        print("Reloading codes from %s" % os.path.join(outPath, codes_hd5_filename))
         C = pd.read_hdf(os.path.join(outPath, codes_hd5_filename))
     elif ( (args['extract_codes'] == 1) and (not isfile(os.path.join(outPath, codes_hd5_filename))) ) or (args['extract_codes'] == 2):
-        hadm_ids_to_keep = get_values_by_name_from_df_column_or_index(data, 'hadm_id')
-        hadm_ids_to_keep = set([str(hadm_id) for hadm_id in hadm_ids_to_keep])
-        con = psycopg2.connect(**query_args)
-        cur = con.cursor()
+        print("Saving codes...")
+        codes = querier.query(query_file=CODES_QUERY_PATH)
+        C = save_icd9_codes(codes, outPath, codes_hd5_filename)
 
-        cur.execute('SET search_path to ' + schema_name)
-        # TODO(mmd): skipping some icd9_codes means that position in the list of icd9_codes doesn't mean the same
-        # thing to everyrow.
-        query = \
-        """
-        SELECT
-            i.icustay_id, d.subject_id, d.hadm_id,
-            array_agg(d.icd9_code ORDER BY seq_num ASC) AS icd9_codes
-        FROM mimiciii.diagnoses_icd d INNER JOIN icustays i
-        ON i.hadm_id = d.hadm_id AND i.subject_id = d.subject_id
-        WHERE d.hadm_id IN ({hadm_ids}) AND seq_num IS NOT NULL
-        GROUP BY i.icustay_id, d.subject_id, d.hadm_id
-        ;
-        """.format(hadm_ids = ','.join(hadm_ids_to_keep))
-        codes = pd.read_sql_query(query,con)
-        cur.close()
-        con.close()
+    if C is None: print("SKIPPED codes_data")
+    else:         print("LOADED codes_data")
 
-        C = save_icd9_codes(data, codes, outPath, codes_filename, codes_hd5_filename)
+    #############
+    # If there is notes extraction
+    N = None
+    if ( (args['extract_notes'] == 0) or (args['extract_codes'] == 1) ) and isfile(os.path.join(outPath, notes_hd5_filename)):
+        print("Reloading Notes.")
+        N = pd.read_hdf(os.path.join(outPath, notes_hd5_filename))
+    elif ( (args['extract_notes'] == 1) and (not isfile(os.path.join(outPath, notes_hd5_filename))) ) or (args['extract_notes'] == 2):
+        print("Saving notes...")
+        notes = querier.query(query_file=NOTES_QUERY_PATH)
+        N = save_notes(notes, outPath, notes_hd5_filename)
 
-    if C is None: print "SKIPPED codes_data"
-    else:         print "LOADED codes_data"
+    if N is None: print("SKIPPED notes_data")
+    else:         print("LOADED notes_data")
 
     #############
     # If there is outcome extraction
     Y = None
     if ( (args['extract_outcomes'] == 0) | (args['extract_outcomes'] == 1) ) & isfile(os.path.join(outPath, outcome_hd5_filename)):
+        print("Reloading outcomes")
         Y = pd.read_hdf(os.path.join(outPath, outcome_hd5_filename))
     elif ( (args['extract_outcomes'] == 1) & (not isfile(os.path.join(outPath, outcome_hd5_filename))) ) | (args['extract_outcomes'] == 2):
+        print("Saving Outcomes...")
         Y = save_outcome(
-            data, dbname, schema_name, outPath, outcome_filename, outcome_hd5_filename,
+            data, querier, outPath, outcome_filename, outcome_hd5_filename,
             outcome_columns_filename, outcome_data_schema, host=args['psql_host'],
         )
 
 
-    print(X.shape, X.index.names, X.columns.names)
-    print(Y.shape, Y.index.names, Y.columns.names, Y.columns)
-    print(C.shape, C.index.names, C.columns.names)
+    if X is not None: print("Numerics", X.shape, X.index.names, X.columns.names)
+    if Y is not None: print("Outcomes", Y.shape, Y.index.names, Y.columns.names, Y.columns)
+    if C is not None: print("Codes", C.shape, C.index.names, C.columns.names)
+    if N is not None: print("Notes", N.shape, N.index.names, N.columns.names)
+
+    # TODO(mmd): Do we want to align N like the others? Seems maybe wrong?
+
     print(data.shape, data.index.names, data.columns.names)
     if args['exit_after_loading']:
         sys.exit()
@@ -961,14 +1020,14 @@ if __name__ == '__main__':
     data.columns = map(lambda x: str(x).lower(), data.columns)
     static_names = list(data.columns.values[3:])
 
-    print 'Shape of X : ', X.shape
-    print 'Shape of Y : ', Y.shape
-    print 'Shape of C : ', C.shape
-    print 'Shape of static : ', data.shape
-    print 'Variable names : ', ",".join(var_names)
-    print 'Output names : ', ",".join(out_names)
-    print 'Ic_dfD9 names : ', ",".join(icd_names)
-    print 'Static data : ', ",".join(static_names)
+    print('Shape of X : ', X.shape)
+    print('Shape of Y : ', Y.shape)
+    print('Shape of C : ', C.shape)
+    print('Shape of static : ', data.shape)
+    print('Variable names : ', ",".join(var_names))
+    print('Output names : ', ",".join(out_names))
+    print('Ic_dfD9 names : ', ",".join(icd_names))
+    print('Static data : ', ",".join(static_names))
 
     X.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'vitals_labs')
     Y.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'interventions')
@@ -978,7 +1037,7 @@ if __name__ == '__main__':
 
     #############
     #X.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'X')
-    #print 'FINISHED VAR LIMITS'
+    #print('FINISHED VAR LIMITS')
 
     X_mean = X.iloc[:, X.columns.get_level_values(-1)=='mean']
     X_mean.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'vitals_labs_mean')
@@ -996,22 +1055,22 @@ if __name__ == '__main__':
     #############
     # Print the total proportions!
     rows, vars = X.shape
-    print ''
+    print('')
     for l, vals in X.iteritems():
         ratio = 1.0 * vals.dropna().count() / rows
-        print str(l) + ': ' + str(round(ratio, 3)*100) + '% present'
+        print(str(l) + ': ' + str(round(ratio, 3)*100) + '% present')
 
     #############
     # Print the per subject proportions!
     df = X.groupby(['subject_id']).count()
     for k in [1, 2, 3]:
-        print '% of subjects had at least ' + str(k) + ' present'
+        print('% of subjects had at least ' + str(k) + ' present')
         d = df > k
         d = d.sum(axis=0)
         d = d / len(df)
         d = d.reset_index()
         for index, row in d.iterrows():
-            print str(index) + ': ' + str(round(row[0], 3)*100) + '%'
-        print '\n'
+            print(str(index) + ': ' + str(round(row[0], 3)*100) + '%')
+        print('\n')
 
-    print 'Done!'
+    print('Done!')
