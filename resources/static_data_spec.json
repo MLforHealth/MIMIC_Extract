@@ -27,7 +27,7 @@
             "type": "integer",
             "constraints" : {
                 "required" : true
-            }            
+            }
           },
           {
             "name": "icustay_id",
@@ -82,9 +82,25 @@
             }
           },
           {
+            "name": "diagnosis_at_admission",
+            "type": "string",
+            "description": "The admitting physician's diagnosis for this patient (why were they admitted).",
+            "constraints" : {
+                "required" : true
+            }
+          },
+          {
             "name": "dischtime",
             "type": "datetime",
             "description": "Datetime of subject's discharge.",
+            "constraints" : {
+                "required" : true
+            }
+          },
+          {
+            "name": "discharge_location",
+            "type": "string",
+            "description": "To where the patient was discharged.",
             "constraints" : {
                 "required" : true
             }
@@ -121,7 +137,7 @@
             "constraints" : {
                 "required" : true
             }
-          },          
+          },
           {
             "name": "admission_type",
             "type": "string",
