@@ -41,7 +41,7 @@
             "name": "gender",
             "description": "Indicates subject gender. 'M'=male or 'F'=female.",
             "type": "string",
-            "pandas_dtype": "category",
+            "pandas_dtype": "string",
             "constraints" : {
                 "required" : true
             }
@@ -50,7 +50,7 @@
             "name": "ethnicity",
             "description": "Indicates subject ethnicity. Many human-readable categories/sub-categories.",
             "type": "string",
-            "pandas_dtype": "category",
+            "pandas_dtype": "string",
             "constraints" : {
                 "required" : true
             }
@@ -142,37 +142,37 @@
             "name": "admission_type",
             "type": "string",
             "description": "Category of admission: {'ELECTIVE', 'EMERGENCY', 'URGENT'}.",
-            "pandas_dtype": "category"
+            "pandas_dtype": "string"
           },
           {
             "name": "first_careunit",
             "type": "string",
             "description": "Category of hospital unit where first admitted: {'CCU', 'CSRU', 'MICU', 'SICU', 'TSICU'}",
-            "pandas_dtype": "category"
+            "pandas_dtype": "string"
           },
           {
             "name": "mort_icu",
             "type": "integer",
             "description": "Indicates if subject died in ICU. 1 if died, 0 otherwise.",
-            "pandas_dtype": "category"
+            "pandas_dtype": "integer"
           },
           {
             "name": "mort_hosp",
             "type": "integer",
             "description": "Indicates if subject died in hospital. 1 if died, 0 otherwise.",
-            "pandas_dtype": "category"
+            "pandas_dtype": "integer"
           },
           {
             "name": "hospital_expire_flag",
             "type": "integer",
             "description": "TODO ???",
-            "pandas_dtype": "category"
+            "pandas_dtype": "integer"
           },
           {
             "name": "hospstay_seq",
             "type": "integer",
             "description": "TODO ???",
-            "pandas_dtype": "category"
+            "pandas_dtype": "integer"
           }
         ],
       "missingValues": "nan",

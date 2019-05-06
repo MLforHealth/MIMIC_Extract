@@ -1001,7 +1001,7 @@ if __name__ == '__main__':
     Y = Y.loc[shared_idx]
     # Problems start here.
     C = C.loc[shared_idx]
-    data = data.loc[shared_sub]
+    data = data[data.index.get_level_values('icustay_id').isin(set(shared_sub))]
     data = data.reset_index().set_index(ID_COLS)
 
     # Map the lowering function to all column names
@@ -1031,8 +1031,8 @@ if __name__ == '__main__':
 
     X.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'vitals_labs')
     Y.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'interventions')
-    C.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'c_df')
-    data.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'patients', format='table')
+    C.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'codes')
+    data.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'patients')
     #fencepost.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'fencepost')
 
     #############
