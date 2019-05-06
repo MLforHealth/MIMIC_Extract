@@ -1032,7 +1032,7 @@ if __name__ == '__main__':
     X.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'vitals_labs')
     Y.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'interventions')
     C.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'codes')
-    data.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'patients')
+    data.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'patients', format='table')
     #fencepost.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'fencepost')
 
     #############
