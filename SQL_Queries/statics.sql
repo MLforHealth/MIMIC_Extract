@@ -24,7 +24,13 @@ select distinct
     c.dnr_first,
     c.fullcode,
     c.dnr,
-    c.timednr_chart
+    c.timednr_chart,
+    c.cmo_first,
+    c.cmo_last,
+    c.cmo,
+    c.cmo_ds,
+    c.timecmo_chart,
+    c.timecmo_nursingnote
 FROM icustay_detail i
     INNER JOIN admissions a ON i.hadm_id = a.hadm_id
     INNER JOIN icustays s ON i.icustay_id = s.icustay_id
