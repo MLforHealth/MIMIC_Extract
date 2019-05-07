@@ -131,6 +131,36 @@
             "description": "At what time was the patient transitioned to DNR?"
           },
           {
+            "name": "cmo_first",
+            "type": "integer",
+            "description": "Were comfort measures under order at the beginning of the stay?"
+          },
+          {
+            "name": "cmo_last",
+            "type": "integer",
+            "description": "Were comfort measures under order at the end of the stay?"
+          },
+          {
+            "name": "cmo",
+            "type": "integer",
+            "description": "Were comfort measures ever under order during the stay?"
+          },
+          {
+            "name": "cmo_ds",
+            "type": "integer",
+            "description": "????"
+          },
+          {
+            "name": "timecmo_chart",
+            "type": "datetime",
+            "description": "The time comfort measures were applied according to the chart?"
+          },
+          {
+            "name": "timecmo_nursingnote",
+            "type": "datetime",
+            "description": "The time comfort measures were applied according to the nursing notes?"
+          },
+          {
             "name": "deathtime",
             "type": "datetime",
             "description": "Datetime of subject's death. NaN if subject did not die.",
