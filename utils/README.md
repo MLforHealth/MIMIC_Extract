@@ -36,15 +36,16 @@ Edit [setup_user_env.sh](./setup_user_env.sh) so all paths point to valid locati
 
 ## Step 2: Create conda environment
 
-Next, make a new conda environment named "mimic_extract_py27_env" and install to that environment all packages listed in [requirements.txt](../requirements.txt).
+Next, make a new conda environment from (../mimic_extract_env_py36.yml) and activate that environment.
 
 ```
-make install_env
+conda env create -f ../mimic_extract_env_py36.yml
+conda activate mimic_extract_py36
 ```
 
 #### Expected Outcome
 
-The desired enviroment will be created. You can then access it with `source activate mimic_extract_py27_env`.
+The desired enviroment will be created and activated.
 
 #### Expected Resources
 
@@ -75,7 +76,7 @@ make build_curated_from_psql
 
 #### Expected Outcome
 
-Will create an hdf5 file inside MIMIC_EXTRACT_OUTPUT_DIR with four tables:
+The default setting will create an hdf5 file inside MIMIC_EXTRACT_OUTPUT_DIR with four tables:
 * **patients**: static demographics, static outcomes
 * **vitals_labs**: time-varying vitals and labs (hourly mean, count and standard deviation)
 * **vitals_labs_mean**: time-varying vitals and labs (hourly mean only)

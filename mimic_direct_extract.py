@@ -8,12 +8,12 @@ from datetime import timedelta
 
 from os.path import isfile, isdir, splitext
 import argparse
-import cPickle
+import pickle as cPickle
 import numpy.random as npr
 
 import spacy
 # TODO(mmd): Upgrade to python 3 and use scispacy (requires python 3.6)
-# import scispacy
+import scispacy
 
 import matplotlib
 matplotlib.use('Agg')
@@ -161,10 +161,10 @@ def save_pop(
 # From Dave's approach!
 def get_variable_mapping(mimic_mapping_filename):
     # Read in the second level mapping of the itemids
-    var_map = pd.DataFrame.from_csv(mimic_mapping_filename, index_col=None).fillna('').astype(str)
-    var_map = var_map.ix[(var_map['LEVEL2'] != '') & (var_map.COUNT>0)]
-    var_map = var_map.ix[(var_map.STATUS == 'ready')]
-    var_map.ITEMID = var_map.ITEMID.astype(int)
+    var_map = pd.read_csv(mimic_mapping_filename, index_col=None)
+    var_map = var_map.ix[(var_map['LEVEL2'] != '') & (var_map['COUNT']>0)]
+    var_map = var_map.ix[(var_map['STATUS'] == 'ready')]
+    var_map['ITEMID'] = var_map['ITEMID'].astype(int)
 
     return var_map
 
@@ -173,13 +173,13 @@ def get_variable_ranges(range_filename):
     columns = [ 'LEVEL2', 'OUTLIER LOW', 'VALID LOW', 'IMPUTE', 'VALID HIGH', 'OUTLIER HIGH' ]
     to_rename = dict(zip(columns, [ c.replace(' ', '_') for c in columns ]))
     to_rename['LEVEL2'] = 'VARIABLE'
-    var_ranges = pd.DataFrame.from_csv(range_filename, index_col=None)
+    var_ranges = pd.read_csv(range_filename, index_col=None)
     var_ranges = var_ranges[columns]
-    var_ranges.rename_axis(to_rename, axis=1, inplace=True)
+    var_ranges.rename(columns=to_rename, inplace=True)
     var_ranges = var_ranges.drop_duplicates(subset='VARIABLE', keep='first')
-    var_ranges['VARIABLE'] = map(str.lower, var_ranges['VARIABLE'])
+    var_ranges['VARIABLE'] = var_ranges['VARIABLE'].str.lower()
     var_ranges.set_index('VARIABLE', inplace=True)
-    var_ranges = var_ranges.ix[var_ranges.notnull().all(axis=1)]
+    var_ranges = var_ranges.loc[var_ranges.notnull().all(axis=1)]
 
     return var_ranges
 
@@ -400,7 +400,7 @@ def save_notes(notes, outPath=None, notes_h5_filename=None):
 
     def process_frame_text(note):
         try:
-            note_text = unicode(note['text'])
+            note_text = str(note['text'])
             note['text'] = ''
             processed_sections = process_note_willie_spacy(note_text)
             ps = {'sections': processed_sections}
@@ -818,7 +818,7 @@ if __name__ == '__main__':
     data = None
     if (args['extract_pop'] == 0 | (args['extract_pop'] == 1) ) & isfile(os.path.join(outPath, static_filename)):
         print("Reloading data from %s" % os.path.join(outPath, static_filename))
-        data = pd.DataFrame.from_csv(os.path.join(outPath, static_filename))
+        data = pd.read_csv(os.path.join(outPath, static_filename))
         data = sanitize_df(data, static_data_schema)
 
         """
@@ -852,7 +852,7 @@ if __name__ == '__main__':
         data_df = querier.query(query_file=STATICS_QUERY_PATH, extra_template_vars=template_vars)
         data_df = sanitize_df(data_df, static_data_schema)
 
-        print("Storgin data @ %s" % os.path.join(outPath, static_filename))
+        print("Storing data @ %s" % os.path.join(outPath, static_filename))
         data = save_pop(data_df, outPath, static_filename, args['pop_size'], static_data_schema)
 
     if data is None: print('SKIPPED static_data')
@@ -1013,11 +1013,11 @@ if __name__ == '__main__':
     else:
         var_names = list(X.columns.get_level_values('itemid'))
 
-    Y.columns = map(lambda x: str(x).lower(), Y.columns)
+    Y.columns = Y.columns.str.lower()
     out_names = list(Y.columns.values[3:])
-    C.columns = map(str.lower, C.columns)
+    C.columns = C.columns.str.lower()
     icd_names = list(C.columns.values[1:])
-    data.columns = map(lambda x: str(x).lower(), data.columns)
+    data.columns = data.columns.str.lower()
     static_names = list(data.columns.values[3:])
 
     print('Shape of X : ', X.shape)
