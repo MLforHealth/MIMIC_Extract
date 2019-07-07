@@ -19,11 +19,13 @@ python -u $MIMIC_EXTRACT_CODE_DIR/mimic_direct_extract.py \
     --resource_path $MIMIC_EXTRACT_CODE_DIR/resources/ \
     --extract_pop 2 \
     --extract_outcomes 2 \
-    --extract_codes 2 \
+    --extract_codes 0 \
     --extract_numerics 2 \
+    --extract_notes 0\
     --exit_after_loading 0 \
     --plot_hist 0 \
-    --psql_host $HOST \
     --pop_size $POP_SIZE \
-    --min_percent 0\
+    --min_percent 5.0\
+    --psql_password Shirly_1024\
+    --psql_host $HOST\
 
