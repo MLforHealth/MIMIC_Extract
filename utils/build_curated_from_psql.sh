@@ -25,5 +25,6 @@ python -u $MIMIC_EXTRACT_CODE_DIR/mimic_direct_extract.py \
     --plot_hist 0 \
     --psql_host $HOST \
     --pop_size $POP_SIZE \
-    --min_percent 0\
+    --psql_password Shirly_1024 \
+    --min_percent 0 \
 
