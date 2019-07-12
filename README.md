@@ -38,11 +38,11 @@ cd utils/
 
 ## Step 1: Setup env vars for current local system
 
-Edit [setup_user_env.sh](./setup_user_env.sh) so all paths point to valid locations on local file system. 
+Edit [setup_user_env.sh](./utils/setup_user_env.sh) so all paths point to valid locations on local file system. 
 
 ## Step 2: Create conda environment
 
-Next, make a new conda environment from (../mimic_extract_env_py36.yml) and activate that environment.
+Next, make a new conda environment from (./mimic_extract_env_py36.yml) and activate that environment.
 
 ```
 conda env create -f ../mimic_extract_env_py36.yml
