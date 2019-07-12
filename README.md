@@ -87,16 +87,16 @@ make build_curated_from_psql
 
 The default setting will create an hdf5 file inside MIMIC_EXTRACT_OUTPUT_DIR with four tables:
 * **patients**: static demographics, static outcomes
-* * One row per (subj_id,hadm_id,icustay_id)
+  * One row per (subj_id,hadm_id,icustay_id)
 
 * **vitals_labs**: time-varying vitals and labs (hourly mean, count and standard deviation)
-* * One row per (subj_id,hadm_id,icustay_id,hours_in)
+  * One row per (subj_id,hadm_id,icustay_id,hours_in)
 
 * **vitals_labs_mean**: time-varying vitals and labs (hourly mean only)
-* * One row per (subj_id,hadm_id,icustay_id,hours_in)
+  * One row per (subj_id,hadm_id,icustay_id,hours_in)
 
 * **interventions**: hourly binary indicators for administered interventions
-* * One row per (subj_id,hadm_id,icustay_id,hours_in)
+  * One row per (subj_id,hadm_id,icustay_id,hours_in)
 
 
 #### Expected Resources
