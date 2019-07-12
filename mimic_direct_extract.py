@@ -361,7 +361,7 @@ def save_icd9_codes(data, codes, outPath, codes_filename, codes_h5_filename):
 
 def save_outcome(
     data, dbname, schema_name, outPath, outcome_filename, outcome_hd5_filename,
-    outcome_columns_filename, outcome_schema, host=None
+    outcome_columns_filename, outcome_schema, host=None, password=None
 ):
     """ Retrieve outcomes from DB and save to disk
 
@@ -386,8 +386,10 @@ def save_outcome(
 
 
     # Setup access to PSQL db
-    args = dict(dbname=dbname, host=host) if host is not None else dict(dbname=dbname)
-    con = psycopg2.connect(**args)
+    query_args = {'dbname': dbname}
+    if args['psql_host'] is not None: query_args['host'] = args['psql_host']
+    if args['psql_password'] is not None: query_args['password'] = args['psql_password']
+    con = psycopg2.connect(**query_args)
     cur = con.cursor()
 
     # Query on ventilation data
@@ -674,6 +676,8 @@ if __name__ == '__main__':
                     help='Whether to plot the histograms of the data')
     ap.add_argument('--psql_host', type=str, default=None,
                     help='Postgres host. Try "/var/run/postgresql/" for Unix domain socket errors.')
+    ap.add_argument('--psql_passowrd', type=str, default=None,
+                    help='Postgres password.')
     ap.add_argument('--group_by_level2', action='store_false', dest='group_by_level2', default=True,
                     help='Do group by level2.')
     
@@ -733,6 +737,7 @@ if __name__ == '__main__':
 
     query_args = {'dbname': dbname}
     if args['psql_host'] is not None: query_args['host'] = args['psql_host']
+    if args['psql_password'] is not None: query_args['password'] = args['psql_password']
 
     #############
     # Population extraction
@@ -924,7 +929,7 @@ if __name__ == '__main__':
     elif ( (args['extract_outcomes'] == 1) & (not isfile(os.path.join(outPath, outcome_hd5_filename))) ) | (args['extract_outcomes'] == 2):
         Y = save_outcome(
             data, dbname, schema_name, outPath, outcome_filename, outcome_hd5_filename,
-            outcome_columns_filename, outcome_data_schema, host=args['psql_host'],
+            outcome_columns_filename, outcome_data_schema, host=args['psql_host'], password=args['psql_password']
         )
 
 
