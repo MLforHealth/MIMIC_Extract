@@ -676,8 +676,7 @@ if __name__ == '__main__':
                     help='Whether to plot the histograms of the data')
     ap.add_argument('--psql_host', type=str, default=None,
                     help='Postgres host. Try "/var/run/postgresql/" for Unix domain socket errors.')
-    ap.add_argument('--psql_passowrd', type=str, default=None,
-                    help='Postgres password.')
+    ap.add_argument('--psql_password', type=str, default=None, help='Postgres password.')
     ap.add_argument('--group_by_level2', action='store_false', dest='group_by_level2', default=True,
                     help='Do group by level2.')
     

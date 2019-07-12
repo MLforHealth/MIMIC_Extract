@@ -48,7 +48,7 @@ source ./setup_user_env.sh
 Next, make a new conda environment from [mimic_extract_env.yml](../mimic_extract_env.yml) and activate that environment.
 
 ```
-conda env create -f ../mimic_extract_env.yml
+conda env create --force -f ../mimic_extract_env.yml
 conda activate mimic_data_extraction
 ```
 
