@@ -9,6 +9,13 @@ This repo contains code for **MIMIC-Extract**. It has been divided into the foll
 * `mimic_direct_extract.py`: extraction script. 
 
 # Paper
+If you use this code in your research, please cite the following publication:
+
+```
+Shirly Wang, Matthew B. A. McDermott, Geeticka Chauhan, Michael C. Hughes, Tristan Naumann, 
+and Marzyeh Ghassemi. MIMIC-Extract: A Data Extraction, Preprocessing, and Representation 
+Pipeline for MIMIC-III. arXiv:1907.08322. 
+```
 
 # Step-by-step Instructions
 
