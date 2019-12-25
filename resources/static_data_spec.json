@@ -228,6 +228,12 @@
             "type": "integer",
             "description": "TODO ???",
             "pandas_dtype": "integer"
+          },
+          {
+            "name": "readmission_30",
+            "type": "integer",
+            "description": "Indicates if the patient will be readmitted to icu within 30 days. 1 if readmitted, 0 otherwise.",
+            "pandas_dtype": "integer"
           }
         ],
       "missingValues": "nan",
