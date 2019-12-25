@@ -30,11 +30,21 @@ select distinct
     c.cmo,
     c.cmo_ds,
     c.timecmo_chart,
-    c.timecmo_nursingnote
+    c.timecmo_nursingnote,
+    COALESCE(f.readmission_30, 0) AS readmission_30
 FROM icustay_detail i
     INNER JOIN admissions a ON i.hadm_id = a.hadm_id
     INNER JOIN icustays s ON i.icustay_id = s.icustay_id
     INNER JOIN code_status c ON i.icustay_id = c.icustay_id
+    LEFT OUTER JOIN (SELECT d.icustay_id, 1 as readmission_30
+              FROM icustays c, icustays d
+              WHERE c.subject_id=d.subject_id
+              AND c.icustay_id > d.icustay_id
+              AND c.intime - d.outtime <= interval '30 days'
+              AND c.outtime = (SELECT MIN(e.outtime) from icustays e 
+                                WHERE e.subject_id=c.subject_id
+                                AND e.intime>d.outtime)) f
+              ON i.icustay_id=f.icustay_id
 WHERE s.first_careunit NOT like 'NICU'
     and i.hadm_id is not null and i.icustay_id is not null
     and i.hospstay_seq = 1

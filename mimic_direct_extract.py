@@ -46,7 +46,7 @@ dynamic_hd5_filename = 'vitals_hourly_data.h5'
 dynamic_hd5_filt_filename = 'all_hourly_data.h5'
 
 codes_hd5_filename = 'C.h5'
-notes_hd5_filename = 'N.h5'
+notes_hd5_filename = 'notes.hdf' # N.h5
 idx_hd5_filename = 'C_idx.h5'
 
 outcome_filename = 'outcomes_hourly_data.csv'
