@@ -126,7 +126,7 @@
             "description": "Was the patient ever DNR?"
           },
           {
-            "name": "timednr_chart",
+            "name": "dnr_first_charttime",
             "type": "datetime",
             "description": "At what time was the patient transitioned to DNR?"
           },
@@ -151,12 +151,12 @@
             "description": "????"
           },
           {
-            "name": "timecmo_chart",
+            "name": "cmo_first_charttime",
             "type": "datetime",
             "description": "The time comfort measures were applied according to the chart?"
           },
           {
-            "name": "timecmo_nursingnote",
+            "name": "cmo_nursingnote_charttime",
             "type": "datetime",
             "description": "The time comfort measures were applied according to the nursing notes?"
           },
