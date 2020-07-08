@@ -1,9 +1,10 @@
+\echo "This file is just for debugging"
+SET search_path TO mimiciii;
 select distinct
     i.subject_id,
     i.hadm_id,
     i.icustay_id,
     i.gender,
---     i.admission_age as age,
     i.age as age,
     i.ethnicity,
     i.admission_type,
@@ -21,7 +22,7 @@ select distinct
     CASE when a.deathtime between i.intime and i.outtime THEN 1 ELSE 0 END AS mort_icu,
     CASE when a.deathtime between i.admittime and i.dischtime THEN 1 ELSE 0 END AS mort_hosp,
     s.first_careunit,
-    c.fullcode_first,
+        c.fullcode_first,
     c.dnr_first,
     c.fullcode,
     c.dnr,
@@ -73,10 +74,8 @@ WHERE s.first_careunit NOT like 'NICU'
     and i.hadm_id is not null and i.icustay_id is not null
     and i.hospstay_seq = 1
     and i.icustay_seq = 1
---     and i.admission_age >= {min_age}
-    and i.age >= {min_age}
-    and i.los_icu >= {min_day}
-    and (i.outtime >= (i.intime + interval '{min_dur} hours'))
-    and (i.outtime <= (i.intime + interval '{max_dur} hours'))
+    and i.age >= 16
+    and i.los_icu >= 1
+    and (i.outtime >= (i.intime + interval '12 hours'))
+    and (i.outtime <= (i.intime + interval '250 hours'))
 ORDER BY subject_id
-{limit}
