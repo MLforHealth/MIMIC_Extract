@@ -1,7 +1,7 @@
 #!/bin/bash
 
-export MIMIC_CODE_DIR=../../mimic-code
-export MIMIC_EXTRACT_CODE_DIR=../
+export MIMIC_CODE_DIR=$(realpath ../../mimic-code)
+export MIMIC_EXTRACT_CODE_DIR=$(realpath ../)
 
 export MIMIC_DATA_DIR=$MIMIC_EXTRACT_CODE_DIR/data/
 
@@ -13,4 +13,9 @@ export DBNAME=mimic
 export SCHEMA=mimiciii
 export HOST=mimic
 export DBSTRING="dbname=$DBNAME options=--search_path=$SCHEMA"
+alias psql="psql -h $HOST -U $DBUSER "
 
+export PGHOST=$HOST
+export PGUSER=$DBUSER
+
+export PGPASSWORD=$1

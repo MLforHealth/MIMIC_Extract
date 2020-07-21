@@ -13,7 +13,6 @@ if [[ -z $POP_SIZE ]]; then
     POP_SIZE=0;
 fi
 
-
 python -u $MIMIC_EXTRACT_CODE_DIR/mimic_direct_extract.py \
     --out_path $MIMIC_EXTRACT_OUTPUT_DIR/ \
     --resource_path $MIMIC_EXTRACT_CODE_DIR/resources/ \
@@ -25,7 +24,7 @@ python -u $MIMIC_EXTRACT_CODE_DIR/mimic_direct_extract.py \
     --exit_after_loading 0 \
     --plot_hist 0 \
     --pop_size $POP_SIZE \
-    --min_percent 5.0\
-    --psql_password abcdefgh\
-    --psql_host $HOST\
+    --min_percent 5.0 \
+    --psql_password $PGPASSWORD \
+    --psql_host $HOST \
 
