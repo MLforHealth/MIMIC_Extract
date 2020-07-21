@@ -9,7 +9,13 @@ This repo contains code for **MIMIC-Extract**. It has been divided into the foll
 * `mimic_direct_extract.py`: extraction script. 
 
 # Paper
+If you use this code in your research, please cite the following publication:
 
+```
+Shirly Wang, Matthew B. A. McDermott, Geeticka Chauhan, Michael C. Hughes, Tristan Naumann, 
+and Marzyeh Ghassemi. MIMIC-Extract: A Data Extraction, Preprocessing, and Representation 
+Pipeline for MIMIC-III. arXiv:1907.08322. 
+```
 
 # Step-by-step Instructions
 
@@ -38,15 +44,19 @@ cd utils/
 
 ## Step 1: Setup env vars for current local system
 
-Edit [setup_user_env.sh](./utils/setup_user_env.sh) so all paths point to valid locations on local file system. 
+Edit [setup_user_env.sh](./utils/setup_user_env.sh) so all paths point to valid locations on local file system and export those variables.
+
+```
+source ./setup_user_env.sh
+```
 
 ## Step 2: Create conda environment
 
-Next, make a new conda environment from [mimic_extract_env_py36.yml](./mimic_extract_env_py36.yml) and activate that environment.
+Next, make a new conda environment from [mimic_extract_env.yml](../mimic_extract_env.yml) and activate that environment.
 
 ```
-conda env create -f ../mimic_extract_env_py36.yml
-conda activate mimic_extract_py36
+conda env create --force -f ../mimic_extract_env.yml
+conda activate mimic_data_extraction
 ```
 
 #### Expected Outcome
@@ -84,7 +94,7 @@ make build_curated_from_psql
 
 The default setting will create an hdf5 file inside MIMIC_EXTRACT_OUTPUT_DIR with four tables:
 * **patients**: static demographics, static outcomes
-   * One row per (subj_id,hadm_id,icustay_id)
+  * One row per (subj_id,hadm_id,icustay_id)
 
 * **vitals_labs**: time-varying vitals and labs (hourly mean, count and standard deviation)
   * One row per (subj_id,hadm_id,icustay_id,hours_in)
@@ -108,5 +118,5 @@ By default, this step builds a dataset with all eligible patients. Sometimes, we
 To do this, just set the POP_SIZE environmental variable. For example, to build a curated dataset with only the first 1000 patients, we could do:
 
 ```
-POP_SIZE=1000 make build_curated_from_psql
+POP_SIZE=100 make build_curated_from_psql
 ```
