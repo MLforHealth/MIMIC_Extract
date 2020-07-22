@@ -47,7 +47,7 @@ cd utils/
 Edit [setup_user_env.sh](./utils/setup_user_env.sh) so all paths point to valid locations on local file system and export those variables.
 
 ```
-source ./setup_user_env.sh
+source ./setup_user_env.sh {your psql password}
 ```
 
 ## Step 2: Create conda environment
@@ -73,11 +73,17 @@ Requires a good internet connection.
 Materialized views in the MIMIC PostgreSQL database will be generated. This includes all concept tables in [MIT-LCP Repo](https://github.com/MIT-LCP/mimic-code) and tables for extracting non-mechanical ventilation, and injections of crystalloid bolus and colloid bolus.
 
 ```
-make build_concepts
+cd $MIMIC_CODE_DIR/concepts
+psql -d mimic -f postgres-functions.sql
+bash postgres_make_concepts.sh
 ```
 
 ## Step 4: Set Cohort Selection and Extraction Criteria
 
+```
+cd $MIMIC_EXTRACT_CODE_DIR
+cd utils
+```
 Parameters for the extraction code are specified in `build_curated_from_psql.sh`.
 Cohort selection criteria regarding minimum admission age is set through `min_age`; minimum and maximum 
 length of ICU stay in hours are set through `min_duration` and `max_duration`.
