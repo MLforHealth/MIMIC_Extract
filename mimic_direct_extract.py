@@ -999,7 +999,7 @@ if __name__ == '__main__':
     # TODO(mmd): Why does this work?
     Y = Y.loc[shared_idx]
     # Problems start here.
-    C = C.loc[shared_idx]
+    if C is not None: C = C.loc[shared_idx]
     data = data[data.index.get_level_values('icustay_id').isin(set(shared_sub))]
     data = data.reset_index().set_index(ID_COLS)
 
@@ -1014,23 +1014,24 @@ if __name__ == '__main__':
 
     Y.columns = Y.columns.str.lower()
     out_names = list(Y.columns.values[3:])
-    C.columns = C.columns.str.lower()
-    icd_names = list(C.columns.values[1:])
+    if C is not None:
+        C.columns = C.columns.str.lower()
+        icd_names = list(C.columns.values[1:])
     data.columns = data.columns.str.lower()
     static_names = list(data.columns.values[3:])
 
     print('Shape of X : ', X.shape)
     print('Shape of Y : ', Y.shape)
-    print('Shape of C : ', C.shape)
+    if C is not None: print('Shape of C : ', C.shape)
     print('Shape of static : ', data.shape)
     print('Variable names : ', ",".join(var_names))
     print('Output names : ', ",".join(out_names))
-    print('Ic_dfD9 names : ', ",".join(icd_names))
+    if C is not None: print('Ic_dfD9 names : ', ",".join(icd_names))
     print('Static data : ', ",".join(static_names))
 
     X.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'vitals_labs')
     Y.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'interventions')
-    C.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'codes')
+    if C is not None: C.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'codes')
     data.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'patients', format='table')
     #fencepost.to_hdf(os.path.join(outPath, dynamic_hd5_filt_filename), 'fencepost')
 
