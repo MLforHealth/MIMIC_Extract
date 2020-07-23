@@ -4,19 +4,15 @@ PSQL_EXECUTABLE:=$(shell which psql)
 
 MIMIC_CODE_DIR:=${shell grep "MIMIC_CODE_DIR" setup_user_env.sh | cut -d'=' -f2}
 
-.PHONY: help
-help:                                                 ## Show help messages for each command
-	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/:.*##/:    ##/'
-
 #=== Commands
 
 .PHONY: build_curated_from_psql           
 
-build_curated_from_psql: setup_user_env.sh has_psql_exe    ## Build curated flat files from PSQL db, using this repo
+build_curated_from_psql: setup_user_env.sh has_psql_exe   ## Build curated flat files from PSQL db, using this repo
 	{ \
 	source ./setup_user_env.sh; \
 	bash build_curated_from_psql.sh; \
-    }
+	}
 
 #=== Required mimic-code/ repo
 # Rules below will download the repo if it doesn't exist

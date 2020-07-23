@@ -27,7 +27,7 @@
             "type": "integer",
             "constraints" : {
                 "required" : true
-            }            
+            }
           },
           {
             "name": "icustay_id",
@@ -82,12 +82,83 @@
             }
           },
           {
+            "name": "diagnosis_at_admission",
+            "type": "string",
+            "description": "The admitting physician's diagnosis for this patient (why were they admitted).",
+            "constraints" : {
+                "required" : true
+            }
+          },
+          {
             "name": "dischtime",
             "type": "datetime",
             "description": "Datetime of subject's discharge.",
             "constraints" : {
                 "required" : true
             }
+          },
+          {
+            "name": "discharge_location",
+            "type": "string",
+            "description": "To where the patient was discharged.",
+            "constraints" : {
+                "required" : true
+            }
+          },
+          {
+            "name": "fullcode_first",
+            "type": "integer",
+            "description": "Did the patient arrive with full code status?"
+          },
+          {
+            "name": "dnr_first",
+            "type": "integer",
+            "description": "Did the patient arrive with DNR status?"
+          },
+          {
+            "name": "fullcode",
+            "type": "integer",
+            "description": "Was the patient ever full-code?"
+          },
+          {
+            "name": "dnr",
+            "type": "integer",
+            "description": "Was the patient ever DNR?"
+          },
+          {
+            "name": "dnr_first_charttime",
+            "type": "datetime",
+            "description": "At what time was the patient transitioned to DNR?"
+          },
+          {
+            "name": "cmo_first",
+            "type": "integer",
+            "description": "Were comfort measures under order at the beginning of the stay?"
+          },
+          {
+            "name": "cmo_last",
+            "type": "integer",
+            "description": "Were comfort measures under order at the end of the stay?"
+          },
+          {
+            "name": "cmo",
+            "type": "integer",
+            "description": "Were comfort measures ever under order during the stay?"
+          },
+          {
+            "name": "cmo_ds",
+            "type": "integer",
+            "description": "????"
+          },
+          {
+            "name": "cmo_first_charttime",
+            "type": "datetime",
+            "description": "The time comfort measures were applied according to the chart?"
+          },
+          {
+            "name": "cmo_nursingnote_charttime",
+            "type": "datetime",
+            "description": "The time comfort measures were applied according to the nursing notes?"
           },
           {
             "name": "deathtime",
@@ -121,7 +192,7 @@
             "constraints" : {
                 "required" : true
             }
-          },          
+          },
           {
             "name": "admission_type",
             "type": "string",
@@ -138,25 +209,31 @@
             "name": "mort_icu",
             "type": "integer",
             "description": "Indicates if subject died in ICU. 1 if died, 0 otherwise.",
-            "pandas_dtype": "category"
+            "pandas_dtype": "integer"
           },
           {
             "name": "mort_hosp",
             "type": "integer",
             "description": "Indicates if subject died in hospital. 1 if died, 0 otherwise.",
-            "pandas_dtype": "category"
+            "pandas_dtype": "integer"
           },
           {
             "name": "hospital_expire_flag",
             "type": "integer",
             "description": "TODO ???",
-            "pandas_dtype": "category"
+            "pandas_dtype": "integer"
           },
           {
             "name": "hospstay_seq",
             "type": "integer",
             "description": "TODO ???",
-            "pandas_dtype": "category"
+            "pandas_dtype": "integer"
+          },
+          {
+            "name": "readmission_30",
+            "type": "integer",
+            "description": "Indicates if the patient will be readmitted to icu within 30 days. 1 if readmitted, 0 otherwise.",
+            "pandas_dtype": "integer"
           }
         ],
       "missingValues": "nan",
