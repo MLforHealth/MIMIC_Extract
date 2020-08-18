@@ -494,8 +494,18 @@ def save_outcome(
                   axis=0)
 
     # Start merging all other interventions
-    table_names = ['vasopressordurations', 'adenosinedurations', 'dobutaminedurations', 'dopaminedurations', 'epinephrinedurations', 'isupreldurations', 
-                    'milrinonedurations', 'norepinephrinedurations', 'phenylephrinedurations', 'vasopressindurations']
+    table_names = [
+        'vasopressor_durations',
+        'adenosine_durations',
+        'dobutamine_durations',
+        'dopamine_durations',
+        'epinephrine_durations',
+        'isuprel_durations',
+        'milrinone_durations',
+        'norepinephrine_durations',
+        'phenylephrine_durations',
+        'vasopressin_durations'
+    ]
     column_names = ['vaso', 'adenosine', 'dobutamine', 'dopamine', 'epinephrine', 'isuprel', 
                     'milrinone', 'norepinephrine', 'phenylephrine', 'vasopressin']
 

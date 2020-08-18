@@ -146,21 +146,6 @@
             "description": "Were comfort measures ever under order during the stay?"
           },
           {
-            "name": "cmo_ds",
-            "type": "integer",
-            "description": "????"
-          },
-          {
-            "name": "cmo_first_charttime",
-            "type": "datetime",
-            "description": "The time comfort measures were applied according to the chart?"
-          },
-          {
-            "name": "cmo_nursingnote_charttime",
-            "type": "datetime",
-            "description": "The time comfort measures were applied according to the nursing notes?"
-          },
-          {
             "name": "deathtime",
             "type": "datetime",
             "description": "Datetime of subject's death. NaN if subject did not die.",

@@ -106,3 +106,6 @@ venv.bak/
 
 *.ipynb_checkpoints*
 makejob
+
+# tags
+tags
