@@ -135,7 +135,8 @@ POP_SIZE=100 make build_curated_from_psql
 ```
 
 # Alternate Step-by-step instructions (no Makefile)
-The first several steps are the same here as above.
+The first several steps are the same here as above. These instructions are tested with mimic-code at version
+762943eab64deb30bdb2abcf7db43602ccb25908
 
 ## Step 0: Required software and prereqs
 
