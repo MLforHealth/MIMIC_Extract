@@ -156,12 +156,18 @@ activate that environment.
 
 ```
 conda env create --force -f ../mimic_extract_env_py36.yml
+```
+
+This step will _report failure on the pip installation stage_. This is not the end of the world. Instead,
+simply activate the environment (which should work despite the former "failure"):
+
+```
 conda activate mimic_data_extraction
 ```
 
-Note that after this installation step, you may need to manually install some packages via conda/pip because
-the environment has a mix of pip/conda dependencies. These include `datapackage`, `spacy`, and `scispacy`. You
-will also then need to install the english language model for spacy, via:
+And then install other packages with pip (e.g., `pip install [package]`), for packages: `datapackage`,
+`spacy`, and `scispacy`.
+You will also then need to install the english language model for spacy, via:
 `python -m spacy download en_core_web_sm`
 
 #### Expected Outcome
