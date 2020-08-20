@@ -3,9 +3,8 @@ select distinct
     i.hadm_id,
     i.icustay_id,
     i.gender,
-    i.age as age,
+    i.admission_age as age,
     i.ethnicity,
-    i.admission_type,
     i.hospital_expire_flag,
     i.hospstay_seq,
     i.los_icu,
@@ -14,6 +13,7 @@ select distinct
     i.intime,
     i.outtime,
     a.diagnosis AS diagnosis_at_admission,
+    a.admission_type,
     a.insurance,
     a.deathtime,
     a.discharge_location,
@@ -67,7 +67,7 @@ WHERE s.first_careunit NOT like 'NICU'
     and i.hadm_id is not null and i.icustay_id is not null
     and i.hospstay_seq = 1
     and i.icustay_seq = 1
-    and i.age >= {min_age}
+    and i.admission_age >= {min_age}
     and i.los_icu >= {min_day}
     and (i.outtime >= (i.intime + interval '{min_dur} hours'))
     and (i.outtime <= (i.intime + interval '{max_dur} hours'))

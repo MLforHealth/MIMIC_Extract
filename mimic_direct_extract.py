@@ -139,23 +139,7 @@ def save_pop(
     # Serialize to disk
     csv_fpath = os.path.join(outPath, static_filename)
     save_sanitized_df_to_csv(csv_fpath, data_df, static_data_schema)
-    """
-    # Lower cost to doing this conversion and of serializing it afterwards
-    #  (http://matthewrocklin.com/blog/work/2015/03/16/Fast-Serialization)
-    data['admission_type'] = data['admission_type'].astype('category')
-    data['gender'] = data['gender'].astype('category')
-    data['first_careunit'] = data['first_careunit'].astype('category')
-    data['ethnicity'] = data['ethnicity'].astype('category')
 
-    # Process the timestamps
-    data['intime'] = pd.to_datetime(data['intime']) #, format="%m/%d/%Y"))
-    data['outtime'] = pd.to_datetime(data['outtime'])
-    data['admittime'] = pd.to_datetime(data['admittime'])
-    data['dischtime'] = pd.to_datetime(data['dischtime'])
-    data['deathtime'] = pd.to_datetime(data['deathtime'])
-    # Serialize to disk
-    data.to_csv(os.path.join(outPath, static_filename))
-    """
     return data_df
 
 # From Dave's approach!
@@ -756,8 +740,8 @@ if __name__ == '__main__':
                     help='Postgres user.')
     ap.add_argument('--psql_password', type=str, default=None,
                     help='Postgres password.')
-    ap.add_argument('--group_by_level2', action='store_false', dest='group_by_level2', default=True,
-                    help='Do group by level2.')
+    ap.add_argument('--no_group_by_level2', action='store_false', dest='group_by_level2', default=True,
+                    help="Don't group by level2.")
     
     ap.add_argument('--min_percent', type=float, default=0.0,
                     help='Minimum percentage of row numbers need to be observations for each numeric column.' +
@@ -829,19 +813,6 @@ if __name__ == '__main__':
         print("Reloading data from %s" % os.path.join(outPath, static_filename))
         data = pd.read_csv(os.path.join(outPath, static_filename))
         data = sanitize_df(data, static_data_schema)
-
-        """
-        data['admission_type'] = data['admission_type'].astype('category')
-        data['gender'] = data['gender'].astype('category')
-        data['first_careunit'] = data['first_careunit'].astype('category')
-        data['ethnicity'] = data['ethnicity'].astype('category')
-
-        data['intime'] = pd.to_datetime(data['intime']) #, format="%m/%d/%Y"))
-        data['outtime'] = pd.to_datetime(data['outtime'])
-        data['admittime'] = pd.to_datetime(data['admittime'])
-        data['dischtime'] = pd.to_datetime(data['dischtime'])
-        data['deathtime'] = pd.to_datetime(data['deathtime'])
-        """
     elif (args['extract_pop'] == 1 & (not isfile(os.path.join(outPath, static_filename)))) | (args['extract_pop'] == 2):
         print("Building data from scratch.")
         pop_size_string = ''
