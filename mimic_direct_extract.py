@@ -435,7 +435,7 @@ def save_outcome(
     query = """
     select i.subject_id, i.hadm_id, v.icustay_id, v.ventnum, v.starttime, v.endtime
     FROM icustay_detail i
-    INNER JOIN ventdurations v ON i.icustay_id = v.icustay_id
+    INNER JOIN ventilation_durations v ON i.icustay_id = v.icustay_id
     where v.icustay_id in ({icuids})
     and v.starttime between intime and outtime
     and v.endtime between intime and outtime;
