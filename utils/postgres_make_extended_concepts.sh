@@ -21,7 +21,7 @@ echo '==='
 echo ''
 
 echo 'Directory 5 of 9: fluid_balance'
-{ echo "${PSQL_PREAMBLE}; DROP TABLE IF EXISTS colloid_bolus; CREATE TABLE colloid_bolus AS "; cat $MIMIC_CODE_DIR/fluid_balance/colloid_bolus.sql; } | sed -r -e "${REGEX_DATETIME_DIFF}" | sed -r -e "${REGEX_SCHEMA}" | psql ${CONNSTR}
-{ echo "${PSQL_PREAMBLE}; DROP TABLE IF EXISTS crystalloid_bolus; CREATE TABLE crystalloid_bolus AS "; cat $MIMIC_CODE_DIR/fluid_balance/crystalloid_bolus.sql; } | sed -r -e "${REGEX_DATETIME_DIFF}" | sed -r -e "${REGEX_SCHEMA}" | psql ${CONNSTR}
+{ echo "${PSQL_PREAMBLE}; DROP TABLE IF EXISTS colloid_bolus; CREATE TABLE colloid_bolus AS "; cat $MIMIC_CODE_DIR/concepts/fluid_balance/colloid_bolus.sql; } | sed -r -e "${REGEX_DATETIME_DIFF}" | sed -r -e "${REGEX_SCHEMA}" | psql ${CONNSTR}
+{ echo "${PSQL_PREAMBLE}; DROP TABLE IF EXISTS crystalloid_bolus; CREATE TABLE crystalloid_bolus AS "; cat $MIMIC_CODE_DIR/concepts/fluid_balance/crystalloid_bolus.sql; } | sed -r -e "${REGEX_DATETIME_DIFF}" | sed -r -e "${REGEX_SCHEMA}" | psql ${CONNSTR}
 
 echo 'Finished creating tables.'
