@@ -4,6 +4,8 @@
 -- events can then be used for various purposes: calculating the total duration
 -- of mechanical ventilation, cross-checking values (e.g. PaO2:FiO2 on vent), etc
 
+SET SEARCH_PATH TO 'mimiciii';
+
 -- The query's logic is roughly:
 --    1) The presence of a mechanical ventilation setting starts a new ventilation event
 --    2) Any instance of a setting in the next 8 hours continues the event
