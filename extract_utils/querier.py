@@ -20,7 +20,7 @@ def get_values_by_name_from_df_column_or_index(data_df, colname):
     return values
 
 # TODO(mmd): Maybe make context manager?
-class MIMIC_Querier():
+class Querier():
     def __init__(
         self,
         exclusion_criteria_template_vars={},
