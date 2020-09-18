@@ -37,7 +37,7 @@ class Querier():
     # TODO(mmd): this isn't really doing exclusion criteria. Should maybe also absorb 'WHERE' clause...
     def add_exclusion_criteria_from_df(self, df, columns=[]):
         self.exclusion_criteria_template_vars.update({
-            c: "','".join(
+            c: "'%s'" % "','".join(
                 set([str(v) for v in get_values_by_name_from_df_column_or_index(df, c)])
             ) for c in columns
         })

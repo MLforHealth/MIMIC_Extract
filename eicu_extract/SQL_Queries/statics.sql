@@ -6,14 +6,17 @@ SELECT DISTINCT
     i.region                    as region,                    -- unique to eICU
     i.unitVisitNumber           as icustay_seq,               -- Should always be 1!
     i.gender                    as gender,
-    i.age                       as age,
+    CASE WHEN i.age LIKE '> 89' THEN 92                       -- TODO(mmd): Find out actual avg
+         ELSE i.age::INTEGER END as age,
     i.ethnicity                 as ethnicity,
     i.icu_los_hours / 24        as los_icu,                   -- Convert to days
     -- These serve as proxies for admission and discharge times
-    i.hospitalAdmitOffset       as hospital_admit_offset,     -- unique to eICU
-    i.hospitalDischargeOffset   as hospital_discharge_offset, -- unique to eICU
-    i.unitAdmitOffset           as unit_admit_offset,         -- unique to eICU
-    i.unitDischargeOffset       as unit_discharge_offset,     -- unique to eICU
+    i.hospitalAdmitOffset       as hospital_admit_offset_min,     -- unique to eICU
+    i.hospitalDischargeOffset   as hospital_discharge_offset_min, -- unique to eICU
+    i.unitAdmitOffset           as unit_admit_offset_min,         -- unique to eICU
+    i.unitDischargeOffset       as unit_discharge_offset_min,     -- unique to eICU
+    ROUND(i.unitDischargeOffset::float / 60.0)::integer     as max_hours_unit,
+    ROUND(i.hospitalDischargeOffset::float / 60.0)::integer as max_hours_hospital,
 
     p.hospitalDischargeLocation as discharge_location,
     i.hosp_mort                 as mort_hosp,
@@ -23,7 +26,7 @@ SELECT DISTINCT
 
 
     i.hospitalDischargeYear     as hospital_discharge_year,   -- unique to eICU
-    i.unitType                  as unit_type,                 -- unique to eICU; maybe first_careunit analog?
+    i.unitType                  as unit_type                  -- unique to eICU; maybe first_careunit analog?
 
     -- Missing (compared to mimic_extract)
     -- TODO: IMPORTANT: hospstay_seq. We limit this to 1 in MIMIC extract, but don't have it here.
@@ -64,10 +67,11 @@ SELECT DISTINCT
 
 
 FROM icustay_detail i
-  INNER JOIN patients p ON i.uniquePID = p.uniquePID AND i.patientUnitStayID = p.patientUnitStayID
+  INNER JOIN patient p ON i.uniquePID = p.uniquePID AND i.patientUnitStayID = p.patientUnitStayID
 WHERE i.patientHealthSystemStayID is not null and i.patientUnitStayID is not null
     and i.unitVisitNumber = 1
-    and i.age >= {min_age}
+    and i.age <> ''
+    and (CASE WHEN i.age LIKE '> 89' THEN 92 ELSE i.age::INTEGER END) >= {min_age}
     and i.icu_los_hours / 24 >= {min_day}
     and (i.unitDischargeOffset - i.unitAdmitOffset) / 60 >= {min_dur}
     and (i.unitDischargeOffset - i.unitAdmitOffset) / 60 <= {max_dur}

@@ -701,10 +701,10 @@ if __name__ == '__main__':
                     help='Enter the path you want the output')
     ap.add_argument('--resource_path',
         type=str,
-        default=os.path.expandvars("$MIMIC_EXTRACT_CODE_DIR/resources/"))
+        default=os.path.expandvars("$MIMIC_EXTRACT_CODE_DIR/mimiciii_extract/resources/"))
     ap.add_argument('--queries_path',
         type=str,
-        default=os.path.expandvars("$MIMIC_EXTRACT_CODE_DIR/SQL_Queries/"))
+        default=os.path.expandvars("$MIMIC_EXTRACT_CODE_DIR/mimiciii_extract/SQL_Queries/"))
     ap.add_argument('--extract_pop', type=int, default=1,
                     help='Whether or not to extract population data: 0 - no extraction, ' +
                     '1 - extract if not present in the data directory, 2 - extract even if there is data')
