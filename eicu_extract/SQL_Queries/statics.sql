@@ -11,12 +11,17 @@ SELECT DISTINCT
     i.ethnicity                 as ethnicity,
     i.icu_los_hours / 24        as los_icu,                   -- Convert to days
     -- These serve as proxies for admission and discharge times
-    i.hospitalAdmitOffset       as hospital_admit_offset_min,     -- unique to eICU
-    i.hospitalDischargeOffset   as hospital_discharge_offset_min, -- unique to eICU
-    i.unitAdmitOffset           as unit_admit_offset_min,         -- unique to eICU
-    i.unitDischargeOffset       as unit_discharge_offset_min,     -- unique to eICU
+    ROUND(i.hospitalAdmitOffset::float / 60.0)::integer     as admittime,
+    ROUND(i.hospitalDischargeOffset::float / 60.0)::integer as dischtime,
+    ROUND(i.unitAdmitOffset::float / 60.0)::integer         as intime,
+    ROUND(i.unitDischargeOffset::float / 60.0)::integer     as outtime,
     ROUND(i.unitDischargeOffset::float / 60.0)::integer     as max_hours_unit,
     ROUND(i.hospitalDischargeOffset::float / 60.0)::integer as max_hours_hospital,
+    
+    CASE WHEN i.hosp_mort = 1 AND LOWER(p.unitDischargeStatus) LIKE '%alive%'
+            THEN ROUND(i.hospitalDischargeOffset::float / 60.0)::integer
+         WHEN LOWER(p.unitDischargeStatus) LIKE '%expired%' THEN ROUND(i.unitDischargeOffset::float / 60.0)::integer
+         ELSE NULL END AS deathtime,
 
     p.hospitalDischargeLocation as discharge_location,
     i.hosp_mort                 as mort_hosp,
