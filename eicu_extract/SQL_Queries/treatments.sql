@@ -7,3 +7,5 @@ SELECT
 FROM icustay_detail i
 INNER JOIN treatment t ON i.patientUnitStayID = t.patientUnitStayID
 WHERE t.patientUnitStayID IN ('{icustay_id}')
+AND t.treatmentOffset > 0
+AND t.treatmentOffset < i.unitDischargeOffset

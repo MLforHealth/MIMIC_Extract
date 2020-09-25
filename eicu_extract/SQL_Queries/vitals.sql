@@ -40,3 +40,10 @@ FROM (
 )
 INNER JOIN icustay_detail i ON i.patientUnitStayID = vap.patientUnitStayID
 WHERE i.patientUnitStayID IN ('{icustay_id}')
+AND (
+    (vp.observationOffset IS NULL)
+    OR (vp.observationOffset > 0 AND vp.observationOffset < i.unitDischargeOffset)
+) AND (
+    (vap.observationOffset IS NULL)
+    OR (vap.observationOffset > 0 AND vap.observationOffset < i.unitDischargeOffset)
+)

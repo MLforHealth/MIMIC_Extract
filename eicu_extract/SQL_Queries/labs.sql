@@ -11,4 +11,5 @@ FROM icustay_detail i
 INNER JOIN lab l ON i.patientUnitStayID = l.patientUnitStayID
 where l.patientUnitStayID IN ('{icustay_id}')
   AND l.labResult IS NOT NULL
-  AND l.labResultOffset > 0 -- Only take labs during the unit stay. Do we need to be concerned with the other end too??
+  AND l.labResultOffset > 0 -- Only take labs during the unit stay.
+  AND l.labResultOffset < i.unitDischargeOffset  -- Only take labs during the unit stay.
