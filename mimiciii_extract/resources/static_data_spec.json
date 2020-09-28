@@ -131,6 +131,11 @@
             "description": "At what time was the patient transitioned to DNR?"
           },
           {
+            "name": "timecmo_chart",
+            "type": "datetime",
+            "description": "At what time was the patient transitioned to CMO?"
+          },
+          {
             "name": "cmo_first",
             "type": "integer",
             "description": "Were comfort measures under order at the beginning of the stay?"
