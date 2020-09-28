@@ -1,4 +1,4 @@
-name: mimic_extract_py36
+name: mimic_data_extraction
 channels:
   - conda-forge
   - defaults
@@ -173,7 +173,7 @@ dependencies:
   - pip:
     - blis==0.4.1
     - catalogue==1.0.0
-    - en-core-web-sm==2.1.0
+    - https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-2.1.0/en_core_web_sm-2.1.0.tar.gz
     - joblib==0.16.0
     - msgpack==0.6.1
     - nmslib==2.0.6
