@@ -744,8 +744,12 @@ if __name__ == '__main__':
                     help="Don't group by level2.")
     
     ap.add_argument('--min_percent', type=float, default=0.0,
-                    help='Minimum percentage of row numbers need to be observations for each numeric column.' +
-                    'min_percent = 1 means columns with more than 99 percent of nan will be removed')
+                    help='Minimum percentage of row numbers need to be observations for each numeric column. ' +
+                    'min_percent = 1 means columns with more than 99 percent of nan will be removed. ' +
+                    'Note that as our code does not split the data into train/test sets, ' +
+                    'removing columns in this way prior to train/test splitting yields in a (very minor) ' +
+                    'form of leakage across the train/test set, as the overall missingness measures are used ' +
+                    'that are based on both the train and test sets, rather than just the train set.')
     ap.add_argument('--min_age', type=int, default=15,
                     help='Minimum age of patients to be included')
     ap.add_argument('--min_duration', type=int, default=12,
