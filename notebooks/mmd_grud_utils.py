@@ -154,7 +154,8 @@ class GRUD(nn.Module):
         combined = torch.cat((x, h, mask), 1)
         z = torch.sigmoid(self.zl(combined)) #sigmoid(W_z*x_t + U_z*h_{t-1} + V_z*m_t + bz)
         r = torch.sigmoid(self.rl(combined)) #sigmoid(W_r*x_t + U_r*h_{t-1} + V_r*m_t + br)
-        h_tilde = torch.tanh(self.hl(combined)) #tanh(W*x_t +U(r_t*h_{t-1}) + V*m_t) + b
+        combined_new = torch.cat((x, r*h, mask), 1)
+        h_tilde = torch.tanh(self.hl(combined_new)) #tanh(W*x_t +U(r_t*h_{t-1}) + V*m_t) + b
         h = (1 - z) * h + z * h_tilde
         
         return h
