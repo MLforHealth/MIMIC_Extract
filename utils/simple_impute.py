@@ -18,8 +18,13 @@ def simple_imputer(df,train_subj):
     df_out.rename(columns={'count': 'mask'}, level='Aggregation Function', inplace=True)
     
     is_absent = (1 - df_out.loc[:, idx[:, 'mask']])
-    hours_of_absence = is_absent.cumsum()
-    time_since_measured = hours_of_absence - hours_of_absence[is_absent==0].fillna(method='ffill')
+#     hours_of_absence = is_absent.cumsum()
+#     time_since_measured = hours_of_absence - hours_of_absence[is_absent==0].fillna(method='ffill')
+
+    hours_of_absence = is_absent.groupby(ID_COLS).cumsum()
+    hours_of_absence.columns.set_names(['LEVEL2', 'Aggregation Function'], inplace=True)
+    time_since_measured = hours_of_absence - hours_of_absence[is_absent==0].groupby(ID_COLS).fillna(method='ffill') #.fillna(100)
+    
     time_since_measured.rename(columns={'mask': 'time_since_measured'}, level='Aggregation Function', inplace=True)
 
     df_out = pd.concat((df_out, time_since_measured), axis=1)
