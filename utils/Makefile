@@ -37,7 +37,7 @@ build_concepts_mimic_code: setup_user_env.sh clone_mimic_code_repo
 	{ \
 	source ./setup_user_env.sh; \
 	cd ${MIMIC_CODE_DIR}/concepts; \
-	psql -U ${DBUSER} "${DBSTRING}" -h ${HOST} -f ./make-concepts.sql; \
+	psql "${DBSTRING}" -f ./make-concepts.sql; \
 	cd ../../MIMIC_Extract/utils; \
 	}
 
@@ -45,9 +45,9 @@ build_concepts_mimic_code: setup_user_env.sh clone_mimic_code_repo
 build_extra_concepts: setup_user_env.sh niv-durations.sql crystalloid-bolus.sql colloid-bolus.sql
 	{ \
 	source ./setup_user_env.sh; \
-	psql -U ${DBUSER} "${DBSTRING}" -h ${HOST} -f ./niv-durations.sql; \
-	psql -U ${DBUSER} "${DBSTRING}" -h ${HOST} -f ./crystalloid-bolus.sql; \
-	psql -U ${DBUSER} "${DBSTRING}" -h ${HOST} -f ./colloid-bolus.sql; \
+	psql "${DBSTRING}" -f ./niv-durations.sql; \
+	psql "${DBSTRING}" -f ./crystalloid-bolus.sql; \
+	psql "${DBSTRING}" -f ./colloid-bolus.sql; \
 	}
 
 #=== Env Checks

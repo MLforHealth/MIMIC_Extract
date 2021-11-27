@@ -732,6 +732,8 @@ if __name__ == '__main__':
 
     ap.add_argument('--psql_host', type=str, default=None,
                     help='Postgres host. Try "/var/run/postgresql/" for Unix domain socket errors.')
+    ap.add_argument('--psql_port', type=int, default=None,
+                    help='Postgres port. Defaults to 5432 if not provided.')
     ap.add_argument('--psql_dbname', type=str, default='mimic',
                     help='Postgres database name.')
     ap.add_argument('--psql_schema_name', type=str, default='mimiciii',
@@ -804,6 +806,7 @@ if __name__ == '__main__':
     schema_name = args['psql_schema_name']
     query_args = {'dbname': dbname}
     if args['psql_host'] is not None: query_args['host'] = args['psql_host']
+    if args['psql_port'] is not None: query_args['port'] = args['psql_port']
     if args['psql_user'] is not None: query_args['user'] = args['psql_user']
     if args['psql_password'] is not None: query_args['password'] = args['psql_password']
 

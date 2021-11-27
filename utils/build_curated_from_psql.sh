@@ -26,4 +26,5 @@ python -u $MIMIC_EXTRACT_CODE_DIR/mimic_direct_extract.py \
     --pop_size $POP_SIZE \
     --psql_password $PGPASSWORD \
     --psql_host $HOST \
+    --psql_port $PORT \
     --min_percent 0 \
