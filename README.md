@@ -91,7 +91,9 @@ bash postgres_make_concepts.sh
 
 Next, you'll need to build 3 additional materialized views necessary for this pipeline. To do this (again with
 schema edit permission), navigate to `utils` and run `bash postgres_make_extended_concepts.sh` followed by
-`psql -d mimic -f niv-durations.sql`.
+`psql -d mimic -f niv-durations.sql`.  (You can add extra `psql`
+connection parameters; see the start of
+`postgres_make_extended_concepts.sh` for details.)
 
 ## Step 4: Set Cohort Selection and Extraction Criteria
 
