@@ -764,8 +764,8 @@ if __name__ == '__main__':
     args = vars(ap.parse_args())
     for key in sorted(args.keys()):
         print(key, args[key])
-    if args["psql_host"] == "SOCKET":
-        args["psql_host"] = None
+    if args['psql_host'] == "SOCKET":
+        args['psql_host'] = None
 
     if not isdir(args['resource_path']):
         raise ValueError("Invalid resource_path: %s" % args['resource_path'])
