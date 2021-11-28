@@ -11,13 +11,13 @@ mkdir -p $MIMIC_EXTRACT_OUTPUT_DIR
 export DBUSER=mimic
 export DBNAME=mimic
 export SCHEMA=mimiciii
-export HOST=localhost
+export HOST=SOCKET
 export PORT=5432
 export PGPASSWORD=mimic
 
-export DBSTRING="host=$HOST port=$PORT user=$DBUSER password=$DBPASSWORD dbname=$DBNAME options=--search_path=$SCHEMA"
-
-export PGHOST=$HOST
-export PGPORT=$PORT
-export PGUSER=$DBUSER
-
+if [ $HOST = SOCKET ]
+then
+    export DBSTRING="port=$PORT user=$DBUSER password=$DBPASSWORD dbname=$DBNAME options=--search_path=$SCHEMA"
+else
+    export DBSTRING="host=$HOST port=$PORT user=$DBUSER password=$DBPASSWORD dbname=$DBNAME options=--search_path=$SCHEMA"
+fi
