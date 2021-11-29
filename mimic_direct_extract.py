@@ -236,7 +236,7 @@ def save_numerics(
     ).set_index('itemid')
 
     X['value'] = pd.to_numeric(X['value'], 'coerce')
-    X.astype({k: int for k in ID_COLS}, inplace=True)
+    X = X.astype({k: int for k in ID_COLS})
 
     to_hours = lambda x: max(0, x.days*24 + x.seconds // 3600)
 
@@ -300,9 +300,9 @@ def save_numerics(
 
     # Get the max time for each of the subjects so we can reconstruct!
     if subjects_filename is not None:
-        np.save(os.path.join(outPath, subjects_filename), data['subject_id'].as_matrix())
+        np.save(os.path.join(outPath, subjects_filename), data['subject_id'].to_numpy())
     if times_filename is not None: 
-        np.save(os.path.join(outPath, times_filename), data['max_hours'].as_matrix())
+        np.save(os.path.join(outPath, times_filename), data['max_hours'].to_numpy())
 
     #fix nan in count to be zero
     idx = pd.IndexSlice
@@ -321,7 +321,7 @@ def save_numerics(
     X = X.drop(columns = drop_col)
 
     ########
-    if dynamic_filename is not None: np.save(os.path.join(outPath, dynamic_filename), X.as_matrix())
+    if dynamic_filename is not None: np.save(os.path.join(outPath, dynamic_filename), X.to_numpy())
     if dynamic_hd5_filename is not None: X.to_hdf(os.path.join(outPath, dynamic_hd5_filename), 'X')
 
     return X
