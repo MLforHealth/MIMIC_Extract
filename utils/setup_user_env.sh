@@ -10,10 +10,10 @@ mkdir -p $MIMIC_EXTRACT_OUTPUT_DIR
 
 export DBUSER=mimic
 export DBNAME=mimic
+export DBPASSWORD=mimic
 export SCHEMA=mimiciii
 export HOST=SOCKET
 export PORT=5432
-export PGPASSWORD=mimic
 
 if [ $HOST = SOCKET ]
 then
