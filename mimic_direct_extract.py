@@ -231,8 +231,8 @@ def save_numerics(
 
     var_map = var_map[
         ['LEVEL2', 'ITEMID', 'LEVEL1']
-    ].rename_axis(
-        {'LEVEL2': 'LEVEL2', 'LEVEL1': 'LEVEL1', 'ITEMID': 'itemid'}, axis=1
+    ].rename(
+        columns={'LEVEL2': 'LEVEL2', 'LEVEL1': 'LEVEL1', 'ITEMID': 'itemid'}
     ).set_index('itemid')
 
     X['value'] = pd.to_numeric(X['value'], 'coerce')
