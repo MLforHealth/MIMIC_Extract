@@ -146,8 +146,8 @@ def save_pop(
 def get_variable_mapping(mimic_mapping_filename):
     # Read in the second level mapping of the itemids
     var_map = pd.read_csv(mimic_mapping_filename, index_col=None)
-    var_map = var_map.ix[(var_map['LEVEL2'] != '') & (var_map['COUNT']>0)]
-    var_map = var_map.ix[(var_map['STATUS'] == 'ready')]
+    var_map = var_map[(var_map['LEVEL2'] != '') & (var_map['COUNT']>0)]
+    var_map = var_map[(var_map['STATUS'] == 'ready')]
     var_map['ITEMID'] = var_map['ITEMID'].astype(int)
 
     return var_map
