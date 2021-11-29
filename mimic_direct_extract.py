@@ -805,7 +805,7 @@ if __name__ == '__main__':
         idx_hd5_filename = splitext(idx_hd5_filename)[0] + '_' + pop_size + splitext(idx_hd5_filename)[1]
 
     dbname = args['psql_dbname']
-    schema_name = args['psql_schema_name']
+    schema_name = 'public,' + args['psql_schema_name']
     query_args = {'dbname': dbname}
     if args['psql_host'] is not None: query_args['host'] = args['psql_host']
     if args['psql_port'] is not None: query_args['port'] = args['psql_port']
