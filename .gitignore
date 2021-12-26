@@ -1,3 +1,6 @@
+# Local settings
+utils/setup_user_env_local.sh
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

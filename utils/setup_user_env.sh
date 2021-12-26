@@ -15,6 +15,11 @@ export SCHEMA=mimiciii
 export HOST=SOCKET
 export PORT=5432
 
+if [ -f "setup_user_env_local.sh" ]
+then
+    . setup_user_env_local.sh
+fi
+
 if [ $HOST = SOCKET ]
 then
     export DBSTRING="port=$PORT user=$DBUSER password=$DBPASSWORD dbname=$DBNAME options=--search_path=$SCHEMA"
