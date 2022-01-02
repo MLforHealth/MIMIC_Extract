@@ -1,8 +1,8 @@
 SHELL:=/bin/bash
 
-PSQL_EXECUTABLE:=$(shell which psql)
+PSQL_EXECUTABLE:=${shell which psql}
 
-MIMIC_CODE_DIR:=${shell grep "MIMIC_CODE_DIR" setup_user_env.sh | cut -d'=' -f2}
+MIMIC_CODE_DIR:=${shell source ./setup_user_env.sh && echo $$MIMIC_CODE_DIR}
 
 #=== Commands
 
@@ -53,7 +53,7 @@ build_extra_concepts: setup_user_env.sh niv-durations.sql crystalloid-bolus.sql 
 #=== Env Checks
 
 .PHONY: has_psql_exe
-has_psql_exe: setup_user_env.sh
+has_psql_exe:
 ifndef PSQL_EXECUTABLE
-	$(error "Error: 'psql' is undefined. Please install/add to current path.")
+	${error "Error: 'psql' is undefined. Please install/add to current path."}
 endif
