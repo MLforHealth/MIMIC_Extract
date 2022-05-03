@@ -734,7 +734,7 @@ if __name__ == '__main__':
                     help='Postgres host. Try "/var/run/postgresql/" for Unix domain socket errors.')
     ap.add_argument('--psql_dbname', type=str, default='mimic',
                     help='Postgres database name.')
-    ap.add_argument('--psql_schema_name', type=str, default='mimiciii',
+    ap.add_argument('--psql_schema_name', type=str, default='public,mimiciii',
                     help='Postgres database name.')
     ap.add_argument('--psql_user', type=str, default=None,
                     help='Postgres user.')

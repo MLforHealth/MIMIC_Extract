@@ -25,7 +25,7 @@ class MIMIC_Querier():
         self,
         exclusion_criteria_template_vars={},
         query_args={}, # passed wholesale to psycopg2.connect
-        schema_name='mimiciii'
+        schema_name='public,mimiciii'
     ):
         """ A class to facilitate repeated Queries to a MIMIC psql database """
         self.exclusion_criteria_template_vars = {}
