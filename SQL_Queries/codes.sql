@@ -1,4 +1,4 @@
-SET SEARCH_PATH TO 'public,mimiciii';
+SET SEARCH_PATH TO public,mimiciii;
 SELECT
     i.icustay_id, d.subject_id, d.hadm_id,
     array_agg(d.icd9_code ORDER BY seq_num ASC) AS icd9_codes

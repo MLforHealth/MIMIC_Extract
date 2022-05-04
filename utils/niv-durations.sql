@@ -4,7 +4,7 @@
 -- events can then be used for various purposes: calculating the total duration
 -- of mechanical ventilation, cross-checking values (e.g. PaO2:FiO2 on vent), etc
 
-SET SEARCH_PATH TO 'public,mimiciii';
+SET SEARCH_PATH TO public,mimiciii;
 
 -- The query's logic is roughly:
 --    1) The presence of a mechanical ventilation setting starts a new ventilation event
