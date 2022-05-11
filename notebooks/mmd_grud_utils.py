@@ -228,7 +228,6 @@ def Train_Model(
     loss_CEL=torch.nn.CrossEntropyLoss()
     loss_L1 = torch.nn.L1Loss()
     
-    learning_rate = 0.001
 #     optimizer = torch.optim.RMSprop(model.parameters(), lr = learning_rate, alpha=0.99)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     use_gpu = False#torch.cuda.is_available()
