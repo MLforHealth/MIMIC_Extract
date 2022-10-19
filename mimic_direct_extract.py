@@ -146,8 +146,8 @@ def save_pop(
 def get_variable_mapping(mimic_mapping_filename):
     # Read in the second level mapping of the itemids
     var_map = pd.read_csv(mimic_mapping_filename, index_col=None)
-    var_map = var_map.ix[(var_map['LEVEL2'] != '') & (var_map['COUNT']>0)]
-    var_map = var_map.ix[(var_map['STATUS'] == 'ready')]
+    var_map = var_map[(var_map['LEVEL2'] != '') & (var_map['COUNT']>0)]
+    var_map = var_map[(var_map['STATUS'] == 'ready')]
     var_map['ITEMID'] = var_map['ITEMID'].astype(int)
 
     return var_map
@@ -231,12 +231,12 @@ def save_numerics(
 
     var_map = var_map[
         ['LEVEL2', 'ITEMID', 'LEVEL1']
-    ].rename_axis(
-        {'LEVEL2': 'LEVEL2', 'LEVEL1': 'LEVEL1', 'ITEMID': 'itemid'}, axis=1
+    ].rename(
+        columns={'LEVEL2': 'LEVEL2', 'LEVEL1': 'LEVEL1', 'ITEMID': 'itemid'}
     ).set_index('itemid')
 
     X['value'] = pd.to_numeric(X['value'], 'coerce')
-    X.astype({k: int for k in ID_COLS}, inplace=True)
+    X = X.astype({k: int for k in ID_COLS})
 
     to_hours = lambda x: max(0, x.days*24 + x.seconds // 3600)
 
@@ -300,9 +300,9 @@ def save_numerics(
 
     # Get the max time for each of the subjects so we can reconstruct!
     if subjects_filename is not None:
-        np.save(os.path.join(outPath, subjects_filename), data['subject_id'].as_matrix())
+        np.save(os.path.join(outPath, subjects_filename), data['subject_id'].to_numpy())
     if times_filename is not None: 
-        np.save(os.path.join(outPath, times_filename), data['max_hours'].as_matrix())
+        np.save(os.path.join(outPath, times_filename), data['max_hours'].to_numpy())
 
     #fix nan in count to be zero
     idx = pd.IndexSlice
@@ -321,7 +321,7 @@ def save_numerics(
     X = X.drop(columns = drop_col)
 
     ########
-    if dynamic_filename is not None: np.save(os.path.join(outPath, dynamic_filename), X.as_matrix())
+    if dynamic_filename is not None: np.save(os.path.join(outPath, dynamic_filename), X.to_numpy())
     if dynamic_hd5_filename is not None: X.to_hdf(os.path.join(outPath, dynamic_hd5_filename), 'X')
 
     return X
@@ -732,6 +732,8 @@ if __name__ == '__main__':
 
     ap.add_argument('--psql_host', type=str, default=None,
                     help='Postgres host. Try "/var/run/postgresql/" for Unix domain socket errors.')
+    ap.add_argument('--psql_port', type=int, default=None,
+                    help='Postgres port. Defaults to 5432 if not provided.')
     ap.add_argument('--psql_dbname', type=str, default='mimic',
                     help='Postgres database name.')
     ap.add_argument('--psql_schema_name', type=str, default='mimiciii',
@@ -762,6 +764,8 @@ if __name__ == '__main__':
     args = vars(ap.parse_args())
     for key in sorted(args.keys()):
         print(key, args[key])
+    if args['psql_host'] == "SOCKET":
+        args['psql_host'] = None
 
     if not isdir(args['resource_path']):
         raise ValueError("Invalid resource_path: %s" % args['resource_path'])
@@ -801,9 +805,10 @@ if __name__ == '__main__':
         idx_hd5_filename = splitext(idx_hd5_filename)[0] + '_' + pop_size + splitext(idx_hd5_filename)[1]
 
     dbname = args['psql_dbname']
-    schema_name = args['psql_schema_name']
+    schema_name = 'public,' + args['psql_schema_name']
     query_args = {'dbname': dbname}
     if args['psql_host'] is not None: query_args['host'] = args['psql_host']
+    if args['psql_port'] is not None: query_args['port'] = args['psql_port']
     if args['psql_user'] is not None: query_args['user'] = args['psql_user']
     if args['psql_password'] is not None: query_args['password'] = args['psql_password']
 
