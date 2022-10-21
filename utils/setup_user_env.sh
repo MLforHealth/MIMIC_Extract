@@ -10,7 +10,7 @@ mkdir -p $MIMIC_EXTRACT_OUTPUT_DIR
 
 export DBUSER=bnestor
 export DBNAME=mimic
-export SCHEMA=mimiciii
+export SCHEMA=public,mimiciii
 export HOST=mimic
 export DBSTRING="dbname=$DBNAME options=--search_path=$SCHEMA"
 alias psql="psql -h $HOST -U $DBUSER "

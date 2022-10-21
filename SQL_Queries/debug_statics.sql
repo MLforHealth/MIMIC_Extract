@@ -1,5 +1,5 @@
 \echo "This file is just for debugging"
-SET search_path TO mimiciii;
+SET search_path TO public,mimiciii;
 select distinct
     i.subject_id,
     i.hadm_id,
