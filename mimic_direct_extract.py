@@ -55,13 +55,13 @@ outcome_columns_filename = 'outcomes_colnames.txt'
 
 # SQL command params
 
-ID_COLS = ['subject_id', 'hadm_id', 'icustay_id']
-ITEM_COLS = ['itemid', 'label', 'LEVEL1', 'LEVEL2']
+ID_COLS = ['subject_id', 'hadm_id', 'stay_id']
+ITEM_COLS = ['itemid', 'label']
 
 def add_outcome_indicators(out_gb):
     subject_id = out_gb['subject_id'].unique()[0]
     hadm_id = out_gb['hadm_id'].unique()[0]
-    icustay_id = out_gb['icustay_id'].unique()[0]
+    stay_id = out_gb['stay_id'].unique()[0]
     max_hrs = out_gb['max_hours'].unique()[0]
     on_hrs = set()
 
@@ -72,19 +72,19 @@ def add_outcome_indicators(out_gb):
     on_vals = [0]*len(off_hrs) + [1]*len(on_hrs)
     hours = list(off_hrs) + list(on_hrs)
     return pd.DataFrame({'subject_id': subject_id, 'hadm_id':hadm_id,
-                        'hours_in':hours, 'on':on_vals}) #icustay_id': icustay_id})
+                        'hours_in':hours, 'on':on_vals}) #stay_id': stay_id})
 
 
 def add_blank_indicators(out_gb):
     subject_id = out_gb['subject_id'].unique()[0]
     hadm_id = out_gb['hadm_id'].unique()[0]
-    #icustay_id = out_gb['icustay_id'].unique()[0]
+    #stay_id = out_gb['stay_id'].unique()[0]
     max_hrs = out_gb['max_hours'].unique()[0]
 
     hrs = range(max_hrs + 1)
     vals = list([0]*len(hrs))
     return pd.DataFrame({'subject_id': subject_id, 'hadm_id':hadm_id,
-                        'hours_in':hrs, 'on':vals})#'icustay_id': icustay_id,
+                        'hours_in':hrs, 'on':vals})#'stay_id': stay_id,
 
 def continuous_outcome_processing(out_data, data, icustay_timediff):
     """
@@ -93,23 +93,25 @@ def continuous_outcome_processing(out_data, data, icustay_timediff):
     ----
     out_data : pd.DataFrame
         index=None
-        Contains subset of icustay_id corresp to specific sessions where outcome observed.
+        Contains subset of stay_id corresp to specific sessions where outcome observed.
     data : pd.DataFrame
-        index=icustay_id
+        index=stay_id
         Contains full population of static demographic data
 
     Returns
     -------
     out_data : pd.DataFrame
     """
-    out_data['intime'] = out_data['icustay_id'].map(data['intime'].to_dict())
-    out_data['outtime'] = out_data['icustay_id'].map(data['outtime'].to_dict())
-    out_data['max_hours'] = out_data['icustay_id'].map(icustay_timediff)
+    print(out_data.head())
+    print(data.head())
+    out_data['intime'] = out_data['stay_id'].map(data['intime'].to_dict())
+    out_data['outtime'] = out_data['stay_id'].map(data['outtime'].to_dict())
+    out_data['max_hours'] = out_data['stay_id'].map(icustay_timediff)
     out_data['starttime'] = out_data['starttime'] - out_data['intime']
     out_data['starttime'] = out_data.starttime.apply(lambda x: x.days*24 + x.seconds//3600)
     out_data['endtime'] = out_data['endtime'] - out_data['intime']
     out_data['endtime'] = out_data.endtime.apply(lambda x: x.days*24 + x.seconds//3600)
-    out_data = out_data.groupby(['icustay_id'])
+    out_data = out_data.groupby(['stay_id'])
 
     return out_data
 #
@@ -119,11 +121,11 @@ def fill_missing_times(df_by_sid_hid_itemid):
     # Add rows
     sid = df_by_sid_hid_itemid.subject_id.unique()[0]
     hid = df_by_sid_hid_itemid.hadm_id.unique()[0]
-    icustay_id = df_by_sid_hid_itemid.icustay_id.unique()[0]
+    stay_id = df_by_sid_hid_itemid.stay_id.unique()[0]
     itemid = df_by_sid_hid_itemid.itemid.unique()[0]
     filler = pd.DataFrame({'subject_id':[sid]*len(missing_hours),
                            'hadm_id':[hid]*len(missing_hours),
-                           'icustay_id':[icustay_id]*len(missing_hours),
+                           'stay_id':[stay_id]*len(missing_hours),
                            'itemid':[itemid]*len(missing_hours),
                            'hours_in':missing_hours,
                            'value':[np.nan]*len(missing_hours),
@@ -146,9 +148,13 @@ def save_pop(
 def get_variable_mapping(mimic_mapping_filename):
     # Read in the second level mapping of the itemids
     var_map = pd.read_csv(mimic_mapping_filename, index_col=None)
-    var_map = var_map.ix[(var_map['LEVEL2'] != '') & (var_map['COUNT']>0)]
-    var_map = var_map.ix[(var_map['STATUS'] == 'ready')]
-    var_map['ITEMID'] = var_map['ITEMID'].astype(int)
+    # var_map = var_map.loc[(var_map['LEVEL2'] != '') & (var_map['COUNT']>0)]
+    # var_map = var_map.loc[(var_map['STATUS'] == 'ready')]
+    # var_map['ITEMID'] = var_map['ITEMID'].astype(int)
+    
+    var_map = var_map.dropna(subset=['itemid'])
+    var_map = var_map.loc[(var_map['itemid'] != '') & (var_map['count']>0)]
+    var_map['ITEMID'] = var_map['itemid'].astype(int)
 
     return var_map
 
@@ -225,39 +231,86 @@ def range_unnest(df, col, out_col_name=None, reset_index=False):
 # TODO(mmd): improve args
 def save_numerics(
     data, X, I, var_map, var_ranges, outPath, dynamic_filename, columns_filename, subjects_filename,
-    times_filename, dynamic_hd5_filename, group_by_level2, apply_var_limit, min_percent
+    times_filename, dynamic_hd5_filename, apply_var_limit, min_percent
 ):
     assert len(data) > 0 and len(X) > 0, "Must provide some input data to process."
 
-    var_map = var_map[
-        ['LEVEL2', 'ITEMID', 'LEVEL1']
-    ].rename_axis(
-        {'LEVEL2': 'LEVEL2', 'LEVEL1': 'LEVEL1', 'ITEMID': 'itemid'}, axis=1
-    ).set_index('itemid')
+    print('var map', var_map.head())
+    # var_map = var_map[
+    #     ['LEVEL2', 'ITEMID', 'LEVEL1']
+    # ].rename(
+    #     columns={'LEVEL2': 'LEVEL2', 'LEVEL1': 'LEVEL1', 'ITEMID': 'itemid'},
+    # ).set_index('itemid')
+    var_map = var_map.groupby('itemid').last()
+    # var_map = var_map.set_index('itemid')
+
+
+    print('1',X.head())
+
 
     X['value'] = pd.to_numeric(X['value'], 'coerce')
-    X.astype({k: int for k in ID_COLS}, inplace=True)
+    # X.astype({k: int for k in ID_COLS if k in X.columns.tolist()}, inplace=True)
+    for col in ID_COLS:
+        if col in X.columns.tolist():
+            X.loc[:,col] = X[col].astype(int)
 
     to_hours = lambda x: max(0, x.days*24 + x.seconds // 3600)
 
-    X = X.set_index('icustay_id').join(data[['intime']])
-    X['hours_in'] = (X['charttime'] - X['intime']).apply(to_hours)
+    print("joining with intime")
+    print('data', data.head(), data.columns.tolist())
+    X = X.set_index('stay_id').join(data[['intime']]) # left join
+
+
+
+    charttime =X['charttime'].astype(int) / 10**9
+    intime = X['intime'].astype(int) / 10**9
+
+    hours_in = (charttime - intime)//3600
+    X['hours_in'] = hours_in
+
+
+    # try:
+    #     from pandarallel import pandarallel
+    #     pandarallel.initialize(progress_bar=True)
+    #     X['hours_in'] = (X['charttime'] - X['intime']).parallel_apply(to_hours)
+    # except ModuleNotFoundError:
+    #     print("Install pandarallel for faster processing.")
+    #     X['hours_in'] = (X['charttime'] - X['intime']).apply(to_hours)
 
     X.drop(columns=['charttime', 'intime'], inplace=True)
     X.set_index('itemid', append=True, inplace=True)
 
+    print('2',X.head())
+
+    print(len(var_map), len(var_map.groupby('itemid').first()))
+
     # Pandas has a bug with the below for small X
     #X = X.join([var_map, I]).set_index(['label', 'LEVEL1', 'LEVEL2'], append=True)
-    X = X.join(var_map).join(I).set_index(['label', 'LEVEL1', 'LEVEL2'], append=True)
-    standardize_units(X, name_col='LEVEL1', inplace=True)
+    X = X.join(var_map)
+    print(sorted(X.columns.tolist()), sorted(I.columns.tolist()))
+    X = X.join(I,  rsuffix='_remove').set_index(['label'], append=True) # join on label, keep left where columns overlap
+
+    print('3',X.head())
+
+    # standardize_units(X, name_col='LEVEL1', inplace=True)
+    standardize_units(X, name_col='label', inplace=True)
 
     if apply_var_limit > 0: 
-        X = apply_variable_limits(X, var_ranges, 'LEVEL2')
+        # X = apply_variable_limits(X, var_ranges, 'LEVEL2')
+        X = apply_variable_limits(X, var_ranges, 'label')
 
-    group_item_cols = ['LEVEL2'] if group_by_level2 else ITEM_COLS
-    X = X.groupby(ID_COLS + group_item_cols + ['hours_in']).agg(['mean', 'std', 'count'])
+    print('4',X.head())
+
+    # group_item_cols = ['LEVEL2'] if group_by_level2 else ITEM_COLS
+    group_item_cols = ITEM_COLS
+    # drop count and ITEMID
+    X = X.drop(columns=['count', 'ITEMID'])
+    X = X.groupby(ID_COLS + ITEM_COLS + ['hours_in']).agg(['mean', 'std', 'count'])
+    print('after groupby',X.head())
     X.columns = X.columns.droplevel(0)
     X.columns.names = ['Aggregation Function']
+
+    print('5',X.head())
 
     data['max_hours'] = (data['outtime'] - data['intime']).apply(to_hours)
 
@@ -271,12 +324,14 @@ def save_numerics(
 
     #missing_hours_fill = missing_hours_fill.merge(itemids, on='tmp', how='outer')
 
-    fill_df = data.reset_index()[ID_COLS].join(missing_hours_fill.set_index('icustay_id'), on='icustay_id')
+    fill_df = data.reset_index()[ID_COLS].join(missing_hours_fill.set_index('stay_id'), on='stay_id')
     fill_df.set_index(ID_COLS + ['hours_in'], inplace=True)
 
     # Pivot table droups NaN columns so you lose any uniformly NaN.
     X = X.unstack(level = group_item_cols)
     X.columns = X.columns.reorder_levels(order=group_item_cols + ['Aggregation Function'])
+
+    print('6',X.head())
    
 
     #X = X.reset_index().pivot_table(index=ID_COLS + ['hours_in'], columns=group_item_cols, values=X.columns)
@@ -304,12 +359,15 @@ def save_numerics(
     if times_filename is not None: 
         np.save(os.path.join(outPath, times_filename), data['max_hours'].as_matrix())
 
-    #fix nan in count to be zero
+    #fix nan in count to beas_matrix zero
     idx = pd.IndexSlice
-    if group_by_level2:
-        X.loc[:, idx[:, 'count']] = X.loc[:, idx[:, 'count']].fillna(0)
-    else:
-        X.loc[:, idx[:,:,:,:, 'count']] = X.loc[:, idx[:,:,:,:, 'count']].fillna(0)
+    # if group_by_level2:
+    #     X.loc[:, idx[:, 'count']] = X.loc[:, idx[:, 'count']].fillna(0)
+    # else:
+    #     X.loc[:, idx[:,:,:,:, 'count']] = X.loc[:, idx[:,:,:,:, 'count']].fillna(0)
+    print(X.head())
+    # X.loc[:, idx[:,:,:,:, 'count']] = X.loc[:, idx[:,:,:,:, 'count']].fillna(0)
+    X.loc[:, idx[:,:, 'count']] = X.loc[:, idx[:,:, 'count']].fillna(0)
     
     # Drop columns that have very few recordings
     n = round((1-min_percent/100.0)*X.shape[0])
@@ -403,7 +461,7 @@ def save_notes(notes, outPath=None, notes_h5_filename=None):
         notes.to_hdf(os.path.join(outPath, notes_h5_filename), 'notes')
     return notes
 
-def save_icd9_codes(codes, outPath, codes_h5_filename):
+def save_icd_codes(codes, outPath, codes_h5_filename):
     codes.set_index(ID_COLS, inplace=True)
     codes.to_hdf(os.path.join(outPath, codes_h5_filename), 'C')
     return codes
@@ -421,37 +479,49 @@ def save_outcome(
     Y : Pandas dataframe
         Obeys the outcomes data spec
     """
-    icuids_to_keep = get_values_by_name_from_df_column_or_index(data, 'icustay_id')
+    icuids_to_keep = get_values_by_name_from_df_column_or_index(data, 'stay_id')
     icuids_to_keep = set([str(s) for s in icuids_to_keep])
 
     # Add a new column called intime so that we can easily subtract it off
     data = data.reset_index()
-    data = data.set_index('icustay_id')
+    data = data.set_index('stay_id')
     data['intime'] = pd.to_datetime(data['intime']) #, format="%m/%d/%Y"))
     data['outtime'] = pd.to_datetime(data['outtime'])
     icustay_timediff_tmp = data['outtime'] - data['intime']
     icustay_timediff = pd.Series([timediff.days*24 + timediff.seconds//3600
                                   for timediff in icustay_timediff_tmp], index=data.index.values)
+    # query = """
+    # select i.subject_id, i.hadm_id, v.stay_id, v.ventnum, v.starttime, v.endtime
+    # FROM icustay_detail i
+    # INNER JOIN ventilation_durations v ON i.stay_id = v.stay_id
+    # where v.stay_id in ({icuids})
+    # and v.starttime between intime and outtime
+    # and v.endtime between intime and outtime;
+    # """
+
     query = """
-    select i.subject_id, i.hadm_id, v.icustay_id, v.ventnum, v.starttime, v.endtime
+    select i.subject_id, i.hadm_id, v.stay_id, v.starttime, v.endtime
     FROM icustay_detail i
-    INNER JOIN ventilation_durations v ON i.icustay_id = v.icustay_id
-    where v.icustay_id in ({icuids})
-    and v.starttime between intime and outtime
-    and v.endtime between intime and outtime;
+    INNER JOIN ventilation v ON i.stay_id = v.stay_id
+    where v.stay_id in ({icuids})
+    and v.starttime between i.icu_intime and i.icu_outtime
+    and v.endtime between i.icu_intime and i.icu_outtime;
     """
 
     old_template_vars = querier.exclusion_criteria_template_vars
     querier.exclusion_criteria_template_vars = dict(icuids=','.join(icuids_to_keep))
 
     vent_data = querier.query(query_string=query)
+    # get the ventnum for mimiciv
+    vent_data.loc[:, 'ventnum'] = vent_data.groupby(['stay_id']).cumcount()
+
     vent_data = continuous_outcome_processing(vent_data, data, icustay_timediff)
     vent_data = vent_data.apply(add_outcome_indicators)
     vent_data.rename(columns = {'on':'vent'}, inplace=True)
     vent_data = vent_data.reset_index()
 
     # Get the patients without the intervention in there too so that we
-    ids_with = vent_data['icustay_id']
+    ids_with = vent_data['stay_id']
     ids_with = set(map(int, ids_with))
     ids_all = set(map(int, icuids_to_keep))
     ids_without = (ids_all - ids_with)
@@ -460,51 +530,63 @@ def save_outcome(
     # Create a new fake dataframe with blanks on all vent entries
     out_data = data.copy(deep=True)
     out_data = out_data.reset_index()
-    out_data = out_data.set_index('icustay_id')
+    out_data = out_data.set_index('stay_id')
     out_data = out_data.iloc[out_data.index.isin(ids_without)]
     out_data = out_data.reset_index()
-    out_data = out_data[['subject_id', 'hadm_id', 'icustay_id']]
-    out_data['max_hours'] = out_data['icustay_id'].map(icustay_timediff)
+    out_data = out_data[['subject_id', 'hadm_id', 'stay_id']]
+    out_data['max_hours'] = out_data['stay_id'].map(icustay_timediff)
 
     # Create all 0 column for vent
-    out_data = out_data.groupby('icustay_id')
+    out_data = out_data.groupby('stay_id')
     out_data = out_data.apply(add_blank_indicators)
     out_data.rename(columns = {'on':'vent'}, inplace=True)
     out_data = out_data.reset_index()
 
     # Concatenate all the data vertically
-    Y = pd.concat([vent_data[['subject_id', 'hadm_id', 'icustay_id', 'hours_in', 'vent']],
-                   out_data[['subject_id', 'hadm_id', 'icustay_id', 'hours_in', 'vent']]],
+    Y = pd.concat([vent_data[['subject_id', 'hadm_id', 'stay_id', 'hours_in', 'vent']],
+                   out_data[['subject_id', 'hadm_id', 'stay_id', 'hours_in', 'vent']]],
                   axis=0)
 
     # Start merging all other interventions
     table_names = [
-        'vasopressor_durations',
-        'adenosine_durations',
-        'dobutamine_durations',
-        'dopamine_durations',
-        'epinephrine_durations',
-        'isuprel_durations',
-        'milrinone_durations',
-        'norepinephrine_durations',
-        'phenylephrine_durations',
-        'vasopressin_durations'
+        #'vasopressor',
+        #'adenosine_durations',
+        'dobutamine',
+        'dopamine',
+        'epinephrine',
+        #'isuprel_durations',
+        'milrinone',
+        'norepinephrine',
+        'phenylephrine',
+        'vasopressin'
     ]
-    column_names = ['vaso', 'adenosine', 'dobutamine', 'dopamine', 'epinephrine', 'isuprel', 
+    # column_names = ['vaso', 'adenosine', 'dobutamine', 'dopamine', 'epinephrine', 'isuprel', 
+    #                 'milrinone', 'norepinephrine', 'phenylephrine', 'vasopressin']
+    column_names = ['dobutamine', 'dopamine', 'epinephrine', 
                     'milrinone', 'norepinephrine', 'phenylephrine', 'vasopressin']
 
     # TODO(mmd): This section doesn't work. What is its purpose?
     for t, c in zip(table_names, column_names):
         # TOTAL VASOPRESSOR DATA
         query = """
-        select i.subject_id, i.hadm_id, v.icustay_id, v.vasonum, v.starttime, v.endtime
+        select i.subject_id, i.hadm_id, v.stay_id, v.vasonum, v.starttime, v.endtime
         FROM icustay_detail i
-        INNER JOIN {table} v ON i.icustay_id = v.icustay_id
-        where v.icustay_id in ({icuids})
+        INNER JOIN {table} v ON i.stay_id = v.stay_id
+        where v.stay_id in ({icuids})
         and v.starttime between intime and outtime
         and v.endtime between intime and outtime;
         """
+        query = """
+        select i.subject_id, i.hadm_id, v.stay_id, v.starttime, v.endtime
+        FROM icustay_detail i
+        INNER JOIN {table} v ON i.stay_id = v.stay_id
+        where v.stay_id in ({icuids})
+        and v.starttime between i.icu_intime and i.icu_outtime
+        and v.endtime between i.icu_intime and i.icu_outtime;
+        """
         new_data = querier.query(query_string=query, extra_template_vars=dict(table=t))
+        # get vasonum
+        vent_data.loc[:, 'vasonum'] = new_data.groupby(['stay_id']).cumcount()
         new_data = continuous_outcome_processing(new_data, data, icustay_timediff)
         new_data = new_data.apply(add_outcome_indicators)
         new_data.rename(columns={'on': c}, inplace=True)
@@ -516,58 +598,70 @@ def save_outcome(
             continue
 
         Y = Y.merge(
-            new_data[['subject_id', 'hadm_id', 'icustay_id', 'hours_in', c]],
-            on=['subject_id', 'hadm_id', 'icustay_id', 'hours_in'],
+            new_data[['subject_id', 'hadm_id', 'stay_id', 'hours_in', c]],
+            on=['subject_id', 'hadm_id', 'stay_id', 'hours_in'],
             how='left'
         )
 
         # Sort the values
         Y.fillna(0, inplace=True)
         Y[c] = Y[c].astype(int)
-        #Y = Y.sort_values(['subject_id', 'icustay_id', 'hours_in']) #.merge(df3,on='name')
+        #Y = Y.sort_values(['subject_id', 'stay_id', 'hours_in']) #.merge(df3,on='name')
         Y = Y.reset_index(drop=True)
         print('Extracted ' + c + ' from ' + t)
 
 
     tasks=["colloid_bolus", "crystalloid_bolus", "nivdurations"]
 
-    for task in tasks:
-        if task=='nivdurations':
-            query = """
-            select i.subject_id, i.hadm_id, v.icustay_id, v.starttime, v.endtime
-            FROM icustay_detail i
-            INNER JOIN {table} v ON i.icustay_id = v.icustay_id
-            where v.icustay_id in ({icuids})
-            and v.starttime between intime and outtime
-            and v.endtime between intime and outtime;
-            """
-        else:
-            query = """
-            select i.subject_id, i.hadm_id, v.icustay_id, v.charttime AS starttime, 
-                   v.charttime AS endtime
-            FROM icustay_detail i
-            INNER JOIN {table} v ON i.icustay_id = v.icustay_id
-            where v.icustay_id in ({icuids})
-            and v.charttime between intime and outtime
-            """
+    tasks =[('crystalloid', 'crystalloid_bolus'),('colloids','colloid_bolus'), ('non iv', 'nivdurations')]
+
+    for task, task_rename in tasks:
+        # if task=='nivdurations':
+        #     query = """
+        #     select i.subject_id, i.hadm_id, v.stay_id, v.starttime, v.endtime
+        #     FROM icustay_detail i
+        #     INNER JOIN {table} v ON i.stay_id = v.stay_id
+        #     where v.stay_id in ({icuids})
+        #     and v.starttime between intime and outtime
+        #     and v.endtime between intime and outtime;
+        #     """
+        # else:
+        #     query = """
+        #     select i.subject_id, i.hadm_id, v.stay_id, v.charttime AS starttime, 
+        #            v.charttime AS endtime
+        #     FROM icustay_detail i
+        #     INNER JOIN {table} v ON i.stay_id = v.stay_id
+        #     where v.stay_id in ({icuids})
+        #     and v.charttime between iintime and outtime
+        #     """
+
+        query = """
+        select i.subject_id, i.hadm_id, v.stay_id, v.starttime, v.endtime
+        FROM icustay_detail i
+        INNER JOIN mimiciv_icu.inputevents v ON i.stay_id = v.stay_id
+        where v.stay_id in ({icuids}) 
+        and LOWER(v.ordercategoryname) LIKE '%{table}%'
+        AND v.starttime between i.icu_intime and i.icu_outtime
+        and v.endtime between i.icu_intime and i.icu_outtime;
+        """
 
         new_data = querier.query(query_string=query, extra_template_vars=dict(table=task))
         if new_data.shape[0] == 0: continue
         new_data = continuous_outcome_processing(new_data, data, icustay_timediff)
         new_data = new_data.apply(add_outcome_indicators)
-        new_data.rename(columns = {'on':task}, inplace=True)
+        new_data.rename(columns = {'on':task_rename}, inplace=True)
         new_data = new_data.reset_index()
         Y = Y.merge(
-            new_data[['subject_id', 'hadm_id', 'icustay_id', 'hours_in', task]],
-            on=['subject_id', 'hadm_id', 'icustay_id', 'hours_in'],
+            new_data[['subject_id', 'hadm_id', 'stay_id', 'hours_in', task_rename]],
+            on=['subject_id', 'hadm_id', 'stay_id', 'hours_in'],
             how='left'
         )
 
         # Sort the values
         Y.fillna(0, inplace=True)
-        Y[task] = Y[task].astype(int)
+        Y[task_rename] = Y[task_rename].astype(int)
         Y = Y.reset_index(drop=True)
-        print('Extracted ' + task)
+        print('Extracted ' + task_rename)
 
 
     # TODO: ADD THE RBC/PLT/PLASMA DATA
@@ -576,21 +670,23 @@ def save_outcome(
     # TODO: Move queries to files
     querier.exclusion_criteria_template_vars = old_template_vars
 
-    Y = Y.filter(items=['subject_id', 'hadm_id', 'icustay_id', 'hours_in', 'vent'] + column_names + tasks)
+    Y = Y.filter(items=['subject_id', 'hadm_id', 'stay_id', 'hours_in', 'vent'] + column_names + tasks)
     Y.subject_id = Y.subject_id.astype(int)
-    Y.icustay_id = Y.icustay_id.astype(int)
+    Y.stay_id = Y.stay_id.astype(int)
     Y.hours_in = Y.hours_in.astype(int)
     Y.vent = Y.vent.astype(int)
-    Y.vaso = Y.vaso.astype(int)
+    # Y.vaso = Y.vaso.astype(int)
     y_id_cols = ID_COLS + ['hours_in']
     Y = Y.sort_values(y_id_cols)
     Y.set_index(y_id_cols, inplace=True)
 
     print('Shape of Y : ', Y.shape)
 
+
     # SAVE AS NUMPY ARRAYS AND TEXT FILES
     #np_Y = Y.as_matrix()
     #np.save(os.path.join(outPath, outcome_filename), np_Y)
+
 
     # Turn back into columns
     df = Y.reset_index()
@@ -598,10 +694,13 @@ def save_outcome(
     csv_fpath = os.path.join(outPath, outcome_filename)
     save_sanitized_df_to_csv(csv_fpath, df, outcome_schema)
 
+
     col_names  = list(df.columns.values)
     col_names = col_names[3:]
     with open(os.path.join(outPath, outcome_columns_filename), 'w') as f:
         f.write('\n'.join(col_names))
+
+    print('a',df.columns.names)
 
     # TODO(mmd): Why does df have the index? Is sanitize making multiindex?
     # SAVE THE DATA AS A PANDAS OBJECT
@@ -740,8 +839,8 @@ if __name__ == '__main__':
                     help='Postgres user.')
     ap.add_argument('--psql_password', type=str, default=None,
                     help='Postgres password.')
-    ap.add_argument('--no_group_by_level2', action='store_false', dest='group_by_level2', default=True,
-                    help="Don't group by level2.")
+    # ap.add_argument('--no_group_by_level2', action='store_false', dest='group_by_level2', default=True,
+    #                 help="Don't group by level2.")
     
     ap.add_argument('--min_percent', type=float, default=0.0,
                     help='Minimum percentage of row numbers need to be observations for each numeric column. ' +
@@ -766,8 +865,8 @@ if __name__ == '__main__':
     if not isdir(args['resource_path']):
         raise ValueError("Invalid resource_path: %s" % args['resource_path'])
 
-    mimic_mapping_filename = os.path.join(args['resource_path'], 'itemid_to_variable_map.csv')
-    range_filename = os.path.join(args['resource_path'], 'variable_ranges.csv')
+    mimic_mapping_filename = os.path.join(args['resource_path'], 'mimiciv_itemid_to_variable_map.csv')
+    range_filename = os.path.join(args['resource_path'], 'mimiciv_variable_ranges.csv')
 
     # Load specs for output tables
     static_data_schema = load_datapackage_schema(
@@ -834,10 +933,13 @@ if __name__ == '__main__':
         )
 
         data_df = querier.query(query_file=STATICS_QUERY_PATH, extra_template_vars=template_vars)
+        print(data_df.head())
         data_df = sanitize_df(data_df, static_data_schema)
+        print(2, data_df.head())
 
         print("Storing data @ %s" % os.path.join(outPath, static_filename))
         data = save_pop(data_df, outPath, static_filename, args['pop_size'], static_data_schema)
+        print(3, data.head())
 
     if data is None: print('SKIPPED static_data')
     else:
@@ -857,18 +959,19 @@ if __name__ == '__main__':
 
         ########
         # Step 1) Get the set of variables we want for the patients we've identified!
-        icuids_to_keep = get_values_by_name_from_df_column_or_index(data, 'icustay_id')
+        icuids_to_keep = get_values_by_name_from_df_column_or_index(data, 'stay_id')
         icuids_to_keep = set([str(s) for s in icuids_to_keep])
-        data = data.copy(deep=True).reset_index().set_index('icustay_id')
+        data = data.copy(deep=True).reset_index().set_index('stay_id')
 
         # Select out SID, TIME, ITEMID, VALUE form each of the sources!
         var_map = get_variable_mapping(mimic_mapping_filename)
         var_ranges = get_variable_ranges(range_filename)
 
-        chartitems_to_keep = var_map.loc[var_map['LINKSTO'] == 'chartevents'].ITEMID
+        chartitems_to_keep = var_map.loc[var_map['linksto'] == 'chartevents'].ITEMID
         chartitems_to_keep = set([ str(i) for i in chartitems_to_keep ])
 
-        labitems_to_keep = var_map.loc[var_map['LINKSTO'] == 'labevents'].ITEMID
+
+        labitems_to_keep = var_map.loc[var_map['linksto'] == 'mimiciv_hosp.labevents'].ITEMID
         labitems_to_keep = set([ str(i) for i in labitems_to_keep ])
 
 
@@ -880,23 +983,23 @@ if __name__ == '__main__':
         cur.execute('SET search_path to ' + schema_name)
         query = \
         """
-        select c.subject_id, i.hadm_id, c.icustay_id, c.charttime, c.itemid, c.value, valueuom
+        select c.subject_id, i.hadm_id, c.stay_id, c.charttime, c.itemid, c.value, valueuom
         FROM icustay_detail i
-        INNER JOIN chartevents c ON i.icustay_id = c.icustay_id
-        where c.icustay_id in ({icuids})
+        INNER JOIN chartevents c ON i.stay_id = c.stay_id
+        where c.stay_id in ({icuids})
           and c.itemid in ({chitem})
-          and c.charttime between intime and outtime
-          and c.error is distinct from 1
+          and c.charttime between i.icu_intime and i.icu_outtime
+          and c.warning is distinct from 1
           and c.valuenum is not null
 
         UNION ALL
 
-        select distinct i.subject_id, i.hadm_id, i.icustay_id, l.charttime, l.itemid, l.value, valueuom
+        select distinct i.subject_id, i.hadm_id, i.stay_id, l.charttime, l.itemid, l.value, valueuom
         FROM icustay_detail i
         INNER JOIN labevents l ON i.hadm_id = l.hadm_id
-        where i.icustay_id in ({icuids})
+        where i.stay_id in ({icuids})
           and l.itemid in ({lbitem})
-          and l.charttime between (intime - interval '6' hour) and outtime
+          and l.charttime between (i.icu_intime - interval '6' hour) and i.icu_outtime
           and l.valuenum > 0 -- lab values cannot be 0 and cannot be negative
         ;
         """.format(icuids=','.join(icuids_to_keep), chitem=','.join(chartitems_to_keep), lbitem=','.join(labitems_to_keep))
@@ -906,7 +1009,7 @@ if __name__ == '__main__':
 
         query_d_items = \
         """
-        SELECT itemid, label, dbsource, linksto, category, unitname
+        SELECT itemid, label, linksto, category, unitname
         FROM d_items
         WHERE itemid in ({itemids})
         ;
@@ -918,7 +1021,7 @@ if __name__ == '__main__':
         print("  db query finished after %.3f sec" % (time.time() - start_time))
         X = save_numerics(
             data, X, I, var_map, var_ranges, outPath, dynamic_filename, columns_filename, subjects_filename,
-            times_filename, dynamic_hd5_filename, group_by_level2=args['group_by_level2'], apply_var_limit=args['var_limits'],
+            times_filename, dynamic_hd5_filename, apply_var_limit=args['var_limits'],
             min_percent=args['min_percent']
         )
 
@@ -934,7 +1037,7 @@ if __name__ == '__main__':
     elif ( (args['extract_codes'] == 1) and (not isfile(os.path.join(outPath, codes_hd5_filename))) ) or (args['extract_codes'] == 2):
         print("Saving codes...")
         codes = querier.query(query_file=CODES_QUERY_PATH)
-        C = save_icd9_codes(codes, outPath, codes_hd5_filename)
+        C = save_icd_codes(codes, outPath, codes_hd5_filename)
 
     if C is None: print("SKIPPED codes_data")
     else:         print("LOADED codes_data")
@@ -978,24 +1081,34 @@ if __name__ == '__main__':
     if args['exit_after_loading']:
         sys.exit()
 
+
     shared_idx = X.index
-    shared_sub = list(X.index.get_level_values('icustay_id').unique())
+    shared_sub = list(X.index.get_level_values('stay_id').unique())
     #X = X.loc[shared_idx]
     # TODO(mmd): Why does this work?
+    print(Y.head())
+    print(X.index.names, Y.index.names)
+    # get overlap of x.index and y.index
+    assert X.index.names==Y.index.names
+    shared_idx = X.index.intersection(Y.index)
+
     Y = Y.loc[shared_idx]
     # Problems start here.
     if C is not None: C = C.loc[shared_idx]
-    data = data[data.index.get_level_values('icustay_id').isin(set(shared_sub))]
+    data = data[data.index.get_level_values('stay_id').isin(set(shared_sub))]
     data = data.reset_index().set_index(ID_COLS)
+
 
     # Map the lowering function to all column names
     X.columns = pd.MultiIndex.from_tuples(
         [tuple((str(l).lower() for l in cols)) for cols in X.columns], names=X.columns.names
     )
-    if args['group_by_level2']:
-        var_names = list(X.columns.get_level_values('LEVEL2'))
-    else:
-        var_names = list(X.columns.get_level_values('itemid'))
+    # if args['group_by_level2']:
+    #     var_names = list(X.columns.get_level_values('LEVEL2'))
+    # else:
+    #     var_names = list(X.columns.get_level_values('itemid'))
+    var_names = list(X.columns.get_level_values('itemid'))
+
 
     Y.columns = Y.columns.str.lower()
     out_names = list(Y.columns.values[3:])
@@ -1004,6 +1117,7 @@ if __name__ == '__main__':
         icd_names = list(C.columns.values[1:])
     data.columns = data.columns.str.lower()
     static_names = list(data.columns.values[3:])
+
 
     print('Shape of X : ', X.shape)
     print('Shape of Y : ', Y.shape)

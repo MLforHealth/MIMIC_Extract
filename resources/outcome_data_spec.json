@@ -30,7 +30,7 @@
             }            
           },
           {
-            "name": "icustay_id",
+            "name": "stay_id",
             "description": "ID number for subject within ICUSTAYS table",
             "type": "integer",
             "constraints" : {
@@ -159,7 +159,7 @@
           }
         ],
       "missingValues": "nan",
-      "primaryKey": ["subject_id", "hadm_id", "icustay_id", "hours_in"]
+      "primaryKey": ["subject_id", "hadm_id", "stay_id", "hours_in"]
       }
     }
   ]

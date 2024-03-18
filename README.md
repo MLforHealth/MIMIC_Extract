@@ -1,4 +1,13 @@
-# **MIMIC-Extract**:A Data Extraction, Preprocessing, and Representation Pipeline for MIMIC-III
+# **MIMIC-Extract**:A Data Extraction, Preprocessing, and Representation Pipeline for MIMIC-IV
+
+Note, this is in development. Feel free to raise bugs or requests in the github issues.
+
+
+# TODO:
+Variable ranges for MIMIC-IV variables in resources/mimiciv_variable_ranges.csv
+Include ED data
+Include Notes
+Host a preprocessed output
 
 # About
 This repo contains code for **MIMIC-Extract**. It has been divided into the following folders:
@@ -7,6 +16,17 @@ This repo contains code for **MIMIC-Extract**. It has been divided into the foll
 * Resources: Consist of Rohit_itemid.txt which describes the correlation of MIMIC-III item ids with those of MIMIC II as used by Rohit; itemid_to_variable_map.csv which is the main file used in data extraction - consists of groupings of item ids as well as which item ids are ready to extract; variable_ranges.csv which describes the normal variable ranges for the levels assisting in extraction of proper data. It also contains expected schema of output tables.
 * Utils: scripts and detailed instructions for running **MIMIC-Extract** data pipeline.
 * `mimic_direct_extract.py`: extraction script. 
+
+# Benchmarks
+With data extracted using min_percent=1, the following results were obtained on a held out test set using the GRU-D model:
+
+| Task         | AUROC | AUPRC | Acc. | F1   |
+|--------------|-------|-------|------|------|
+|ICU Mortality |0.8779 |0.4414 |0.9437|0.4035|
+|hosp Mortality|0.8597 |0.4228 |0.9183|0.3306|
+|LOS >3 Days   |0.7213 |0.6506 |0.6888|0.5796|
+|LOS >7 Days   |0.7125 |0.1685 |0.9259|0.0508|
+
 
 # Paper
 If you use this code in your research, please cite the following publication:
@@ -18,15 +38,7 @@ Pipeline for MIMIC-III. arXiv:1907.08322.
 ```
 
 # Pre-processed Output
-If you simply wish to use the output of this pipeline in your own research, a preprocessed version with
-default parameters is available via gcp,
-[here](https://console.cloud.google.com/storage/browser/mimic_extract).
-
-To access this, you will need to be credentialed for MIMIC-III GCP access through physionet. Instructions for
-that are available [on physionet](https://mimic.physionet.org/gettingstarted/cloud/).
-
-This output is released on an as-is basis, with no guarantees, but if you find any issues with it please let
-us know via Github issues.
+Not yet available
 
 # Step-by-step instructions
 The first several steps are the same here as above. These instructions are tested with mimic-code at version
@@ -39,7 +51,7 @@ Your local system should have the following executables on the PATH:
 * conda
 * psql (PostgreSQL 9.4 or higher)
 * git
-* MIMIC-iii psql relational database (Refer to [MIT-LCP Repo](https://github.com/MIT-LCP/mimic-code))
+* MIMIC-iv psql relational database (Refer to [MIT-LCP Repo](https://github.com/MIT-LCP/mimic-code/tree/main/mimic-iv))
 
 All instructions below should be executed from a terminal, with current directory set to utils/
 
@@ -76,7 +88,7 @@ Requires a good internet connection.
 ## Step 3: Build Views for Feature Extraction
 
 Materialized views in the MIMIC PostgreSQL database will be generated.
-This includes all concept tables in [MIT-LCP Repo](https://github.com/MIT-LCP/mimic-code) and tables for
+This includes all concept tables in [MIT-LCP Repo](https://github.com/MIT-LCP/mimic-code/tree/main/mimic-iv) and tables for
 extracting non-mechanical ventilation, and injections of crystalloid bolus and colloid bolus.
 
 Note that you need to have schema edit permission on your postgres user to make concepts in this way. First,
@@ -116,8 +128,8 @@ The default setting will create an hdf5 file inside MIMIC_EXTRACT_OUTPUT_DIR wit
 
 #### Expected Resources
 
-Will probably take 5-10 hours.
-Will require a good machine with at least 50GB RAM.
+For MIMIC-III This took 5-10 hours and required at least 50GB RAM.
+Testing for MIMIC-IV has not yet been conducted.
 
 #### Setting the population size
 

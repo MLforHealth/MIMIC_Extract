@@ -30,7 +30,7 @@
             }
           },
           {
-            "name": "icustay_id",
+            "name": "stay_id",
             "description": "ID number for subject within ICUSTAYS table",
             "type": "integer",
             "constraints" : {
@@ -47,7 +47,7 @@
             }
           },
           {
-            "name": "ethnicity",
+            "name": "race",
             "description": "Indicates subject ethnicity. Many human-readable categories/sub-categories.",
             "type": "string",
             "pandas_dtype": "category",
@@ -77,14 +77,6 @@
             "name": "admittime",
             "type": "datetime",
             "description": "Datetime of subject's admission.",
-            "constraints" : {
-                "required" : true
-            }
-          },
-          {
-            "name": "diagnosis_at_admission",
-            "type": "string",
-            "description": "The admitting physician's diagnosis for this patient (why were they admitted).",
             "constraints" : {
                 "required" : true
             }
@@ -124,16 +116,6 @@
             "name": "dnr",
             "type": "integer",
             "description": "Was the patient ever DNR?"
-          },
-          {
-            "name": "dnr_first_charttime",
-            "type": "datetime",
-            "description": "At what time was the patient transitioned to DNR?"
-          },
-          {
-            "name": "timecmo_chart",
-            "type": "datetime",
-            "description": "At what time was the patient transitioned to CMO?"
           },
           {
             "name": "cmo_first",
@@ -227,7 +209,7 @@
           }
         ],
       "missingValues": "nan",
-      "primaryKey": ["subject_id", "hadm_id", "icustay_id"]
+      "primaryKey": ["subject_id", "hadm_id", "stay_id"]
       }
     }
   ]
