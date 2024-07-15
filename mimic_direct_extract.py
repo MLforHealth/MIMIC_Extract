@@ -231,7 +231,7 @@ def save_numerics(
 
     var_map = var_map[
         ['LEVEL2', 'ITEMID', 'LEVEL1']
-    ].rename_axis(
+    ].rename(
         {'LEVEL2': 'LEVEL2', 'LEVEL1': 'LEVEL1', 'ITEMID': 'itemid'}, axis=1
     ).set_index('itemid')
 
