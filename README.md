@@ -84,10 +84,13 @@ you must clone this github repository to a directory, which here we assume is st
 variable `$MIMIC_CODE_DIR`. After cloning, follow these instructions:
 
 ```
-cd $MIMIC_CODE_DIR/concepts
+cd $MIMIC_CODE_DIR/concepts_postgres
 psql -d mimic -f postgres-functions.sql
-bash postgres_make_concepts.sh
+psql -d mimic -f postgres-make-concepts.sql
 ```
+
+*Note:* 
+You may need to edit those 2 files and add `SET search_path TO mimiciii;`
 
 Next, you'll need to build 3 additional materialized views necessary for this pipeline. To do this (again with
 schema edit permission), navigate to `utils` and run `bash postgres_make_extended_concepts.sh` followed by
